@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { build as buildIndex } from '../tools/build-index.mjs';
 import { build as buildTopics } from '../tools/build-topics.mjs';
 import { nameKey, confirm } from '../tools/build-people.mjs';
-import { sharePage, describe, esc, records } from '../tools/build-share.mjs';
+import { sharePage, notFoundPage, describe, esc, records } from '../tools/build-share.mjs';
 import { hydrate, search } from '../js/index.js';
 
 const entry = (n, title, authors, extra = '') => `<rfc-entry><doc-id>RFC${String(n).padStart(4, '0')}</doc-id><title>${title}</title>${authors.map(a => `<author><name>${a}</name></author>`).join('')}<date><month>June</month><year>2022</year></date><page-count>10</page-count><current-status>PROPOSED STANDARD</current-status>${extra}</rfc-entry>`;
@@ -75,7 +75,7 @@ test('share pages: this RFC\'s own OpenGraph and Twitter tags, safe HTML, a plai
   const page = sharePage(rec);
   assert.match(page, /<meta property="og:title" content="RFC 9110: HTTP &lt;Semantics&gt; &amp; &quot;more&quot;">/);
   assert.match(page, /<meta property="og:description" content="R\. Fielding, D\. O&#39;Brien · June 2022 · Internet Standard · 194 pages">/);
-  assert.match(page, /<meta property="og:url" content="https:\/\/readrfc\.letsimpl\.fyi\/r\/9110">/);
+  assert.match(page, /<meta property="og:url" content="https:\/\/readrfc\.letsimpl\.fyi\/r\/rfc9110">/);
   assert.match(page, /<meta property="og:image" content="https:\/\/readrfc\.letsimpl\.fyi\/icons\/og-image\.png">/);
   assert.match(page, /<meta name="twitter:card" content="summary_large_image">/);
   assert.match(page, /<meta http-equiv="refresh" content="0;url=\/#\/rfc\/9110">/);
@@ -88,5 +88,12 @@ test('share pages exist for every RFC in the real index and none breaks the mark
   const { readFile } = await import('node:fs/promises');
   const list = records(JSON.parse(await readFile(new URL('../data/index.json', import.meta.url))));
   assert.ok(list.length > 9000);
-  for (const rec of list.filter((_, i) => i % 97 === 0)) { const page = sharePage(rec); assert.equal((page.match(/<meta property="og:title"/g) || []).length, 1); assert.ok(!/content="[^"]*"[^>]*"[^>]*>/.test(page.replace(/&quot;/g, '')) || true); assert.match(page, new RegExp(`/r/${rec.n}"`)); }
+  for (const rec of list.filter((_, i) => i % 97 === 0)) { const page = sharePage(rec); assert.equal((page.match(/<meta property="og:title"/g) || []).length, 1); assert.ok(!/content="[^"]*"[^>]*"[^>]*>/.test(page.replace(/&quot;/g, '')) || true); assert.match(page, new RegExp(`/r/rfc${rec.n}"`)); }
+});
+
+test('not-found share page: sends a person to the app, is not indexed, and no RFC page can be named 404.html', () => {
+  const page = notFoundPage();
+  assert.match(page, /http-equiv="refresh" content="0;url=\/"/); assert.match(page, /noindex/);
+  assert.ok(!/og:title|<script|style=/.test(page));
+  assert.ok(sharePage({ n: 404, title: 't', year: 1972, month: 10, status: 'UNK', pages: 1, authors: [] }).includes('/r/rfc404"'));
 });

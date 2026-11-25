@@ -1,4 +1,4 @@
-// Writes one small static page per RFC: dist/r/<n>.html. Link-preview crawlers (chat apps, social sites) do not read the part of
+// Writes one small static page per RFC: dist/r/rfc<n>.html (served at /r/rfc<n>), plus dist/r/404.html for unknown numbers. Link-preview crawlers (chat apps, social sites) do not read the part of
 // an address after "#", so the app's own routes cannot carry a preview. These pages can: each has that RFC's own OpenGraph and
 // Twitter tags, then sends a person on to the app with a plain redirect. Data only: title, authors, date, status, pages.
 // Run by the deploy workflow: `node tools/build-share.mjs dist/r`. Nothing here is brand copy.
@@ -17,7 +17,7 @@ export function describe(rec) {
 }
 
 export function sharePage(rec) {
-  const title = `RFC ${rec.n}: ${rec.title}`, description = describe(rec), url = `${ORIGIN}/r/${rec.n}`, target = `/#/rfc/${rec.n}`, image = `${ORIGIN}/icons/og-image.png`;
+  const title = `RFC ${rec.n}: ${rec.title}`, description = describe(rec), url = `${ORIGIN}/r/rfc${rec.n}`, target = `/#/rfc/${rec.n}`, image = `${ORIGIN}/icons/og-image.png`;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -50,6 +50,24 @@ export function sharePage(rec) {
 `;
 }
 
+// Cloudflare Pages answers an unknown path with the nearest 404.html: here, one that just sends the person to the app.
+export function notFoundPage() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>readrfc</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0;url=/">
+</head>
+<body>
+<p><a href="/">readrfc</a></p>
+</body>
+</html>
+`;
+}
+
 export function records(index) {
   return index.rfcs.map(([n, t, y, m, s, , , , , p, u]) => ({ n, title: t, year: y, month: m, status: s, pages: p, authors: u.map(i => index.authors[i]) }));
 }
@@ -59,6 +77,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const index = JSON.parse(await readFile(new URL('../data/index.json', import.meta.url), 'utf8'));
   await mkdir(out, { recursive: true });
   const list = records(index);
-  for (const rec of list) await writeFile(`${out}/${rec.n}.html`, sharePage(rec));
-  console.log(`wrote ${list.length} share pages to ${out}`);
+  for (const rec of list) await writeFile(`${out}/rfc${rec.n}.html`, sharePage(rec));
+  await writeFile(`${out}/404.html`, notFoundPage());
+  console.log(`wrote ${list.length} share pages and a not-found page to ${out}`);
 }

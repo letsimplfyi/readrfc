@@ -128,7 +128,7 @@ export class App extends Component {
   toggleTheme = () => { const theme = this.state.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = theme; store.save('theme', theme); this.setState({ theme }); };
   toggleMode = () => { const textMode = this.state.textMode === 'prose' ? 'mono' : 'prose'; store.save('textMode', textMode); this.setState({ textMode }); };
   toggleFavourite = n => { const favourites = toggle(this.state.favourites, n, FAVOURITES_MAX); store.save('favourites', favourites); this.setState({ favourites }); };
-  copyLink = async () => { const url = this.state.doc ? `${location.origin}/r/${this.state.doc.n}` : location.href; try { await navigator.clipboard.writeText(url); this.toast('Link copied'); } catch { this.toast(url); } };
+  copyLink = async () => { const url = this.state.doc ? `${location.origin}/r/rfc${this.state.doc.n}` : location.href; try { await navigator.clipboard.writeText(url); this.toast('Link copied'); } catch { this.toast(url); } };
   checkUpdates = async () => {
     this.setState({ checking: true });
     const result = await checkForUpdate({ force: true });

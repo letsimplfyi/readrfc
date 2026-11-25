@@ -58,5 +58,5 @@ test('OpenGraph: the page and the deploy are set up for link previews, and the w
   assert.match(html, /og:image" content="https:\/\/readrfc\.letsimpl\.fyi\/icons\/og-image\.png"/);
   assert.match(read('.github/workflows/deploy.yml'), /node tools\/build-share\.mjs dist\/r/);
   assert.match(read('sw.js'), /pathname\.startsWith\('\/r\/'\)\) return/);
-  assert.match(read('js/ui.js'), /\/r\/\$\{this\.state\.doc\.n\}/);
+  assert.match(read('js/ui.js'), /\/r\/rfc\$\{this\.state\.doc\.n\}/);
 });

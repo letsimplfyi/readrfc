@@ -108,7 +108,7 @@ tools/
   build-index.mjs    rfc-index.xml -> data/index.json + data/graph.json (CI and `npm run index`)
   build-topics.mjs   Wikidata -> data/topics.json (CI and `npm run topics`); the only place Wikidata is contacted
   build-people.mjs   Wikidata + data/index.json -> data/people.json (CI and `npm run people`): confirmed matches only
-  build-share.mjs    data/index.json -> dist/r/<n>.html, one static OpenGraph page per RFC (the deploy workflow runs it)
+  build-share.mjs    data/index.json -> dist/r/rfc<n>.html, one static OpenGraph page per RFC, and dist/r/404.html (the deploy workflow runs it)
   sync-brand.mjs     vendors the brand (npm run brand / brand:check), from Commoner
   serve.py           local static server
 .github/workflows/
