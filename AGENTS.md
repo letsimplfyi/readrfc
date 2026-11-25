@@ -78,6 +78,7 @@ js/
   rfc.js             pure RFC logic: number parsing, URLs, text fetch, text -> blocks, headings, cross-reference links
   index.js           loads data/*.json once; search (acronym, AND keywords, case rule); lookups by number
   graph.js           pure graph logic: neighbourhood (hops, cap), tag sets, chains, the deterministic layout
+  graphview.js       the graph screens: pick a way in, the SVG picture, the list equivalent, the selected-RFC panel
   route.js           the URL is the state: parse and build routes (pure)
   store.js           localStorage: favourites, recent, read marks, reading position (pure + guarded access)
   update.js          registers the service worker; the safe-restart logic (from Commoner)
@@ -121,7 +122,8 @@ Hash routes, so Cloudflare Pages needs no rewrite rules and every view is sharea
 | `#/` | Home: search box, Recent, Favourites |
 | `#/?q=...` | Search results |
 | `#/rfc/9110` | Reader. `#/rfc/9110/section-5.1` opens at a heading |
-| `#/graph/rfc/9110` | Graph around one RFC. `?hops=1\|2` (default 1) |
+| `#/graph` | Pick a way in: areas, streams, decades, tags, groups |
+| `#/graph/rfc/9110` | Graph around one RFC. `?hops=1\|2` (default 1). `&sel=N` is the selected node |
 | `#/graph/tag/area:sec` | Graph of one tag: `area:`, `wg:`, `stream:` or `kw:` |
 | `#/graph/year/1998-2003` | Graph of a year range |
 

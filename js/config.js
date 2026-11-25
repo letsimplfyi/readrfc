@@ -21,3 +21,11 @@ export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'Jun
 export const LABELS = {
   search: 'Search', read: 'Read', recent: 'Recent', favourites: 'Favourites', graph: 'Graph', details: 'Details', contents: 'Contents', list: 'List',
 };
+
+// Graph: the default and the "more" cap on nodes, and the drawing grid (px).
+export const GRAPH_MORE_NODES = 400;
+export const GRAPH = { padLeft: 88, padRight: 48, padTop: 40, row: 60, laneGap: 24, labelGap: 100, pxPerYear: 56, minWidth: 560, spread: 96 };
+export const AREA_NONE = '–';
+// The phone layout: time runs top to bottom in a few columns that fit the width (drawn in a 360-wide box that scales).
+export const GRAPH_V = { width: 360, gutter: 48, padRight: 8, padTop: 24, row: 64, columns: 3 };
+export const NARROW = '(max-width: 700px)';

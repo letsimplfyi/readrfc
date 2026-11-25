@@ -79,12 +79,19 @@ An RFC with no links shows alone, with its tag neighbours offered in a list belo
 
 - **x is time.** Publish year, with the month as a tie-break. The reader sees at once that a 1999 spec was replaced by a 2022
   one. Year ticks are drawn as hairlines with a text label.
-- **y separates, it does not mean.** Nodes are laid out in horizontal lanes by area (or by group inside a single area; one lane
-  when a tag already fixes it). Within a lane an overlap-avoidance pass moves nodes just enough to clear each other.
+- **y separates, it does not mean.** One timeline for an RFC's lineage and for a tag, so a replacement chain reads in a line.
+  Year-range and stream graphs group rows into lanes by area, labelled. In every case a node takes the free row nearest the
+  rows of the RFCs it links to, so links stay short, and nothing overlaps.
+- **On a phone the timeline runs top to bottom** (screens up to 700px wide): three columns that fit the width, drawn in a
+  360-unit box that scales, scrolling with the page itself. There is no sideways panning and no scroll area inside the page.
+  Time never runs backwards down the page; years are labelled where they start, so spacing is by order, not by amount of
+  time. The selected-RFC panel is pinned to the bottom of the screen, so a tap shows something at once. Nodes have a 50-unit
+  hit area (44 CSS px at 320 wide).
 - **Deterministic and still.** The picture is computed once and drawn once. Same input, same image. No force simulation, no
   wobble, no dragging, no animation, no random seeds. This is the main difference from Obsidian's graph and it is deliberate:
   motion is the opposite of low sensory load.
-- **Native pan and zoom only.** The SVG sits in a scroll container; the browser scrolls it. Text zoom works. No custom gestures.
+- **Native scrolling only.** On a desktop the SVG sits in a scroll container the browser scrolls; on a phone it is part of the page.
+  Text zoom works. No custom gestures.
 
 ### Encoding without colour
 

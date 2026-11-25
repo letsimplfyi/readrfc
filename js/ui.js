@@ -1,7 +1,8 @@
 import { h, Component } from '../vendor/preact.module.js';
 import htm from '../vendor/htm.module.js';
 import { APP_VERSION, REPO_URL, RECENT_KEEP, FAVOURITES_MAX, READ_MAX, RESULTS_PAGE, CHUNK_CHARS, LABELS } from './config.js';
-import { parseRoute, homeHref, rfcHref } from './route.js';
+import { parseRoute, homeHref, rfcHref, graphHref, tagHref } from './route.js';
+import { GraphView, graphTitle } from './graphview.js';
 import { loadIndex, search, statusName, streamName, dateOf } from './index.js';
 import { parseNumber, fetchText, fetchMeta, cleanText, chunks, linkify, paragraphs, officialUrl, errataUrl } from './rfc.js';
 import { store, pushFront, toggle } from './store.js';
@@ -56,7 +57,7 @@ export class App extends Component {
 
   enter(route) {
     if (!this.state.data) return;
-    if (route.view !== 'rfc') { this.abort?.abort(); document.title = 'readrfc'; this.setState({ doc: null }); return; }
+    if (route.view !== 'rfc') { this.abort?.abort(); document.title = route.view === 'graph' ? `${graphTitle(route)} · readrfc` : 'readrfc'; this.setState({ doc: null }); return; }
     if (this.state.doc?.n === route.n) { this.goToSection(route.section); return; }
     this.openRfc(route);
   }
@@ -162,6 +163,7 @@ export class App extends Component {
         <label for="q">${LABELS.search}</label>
         <input id="q" class="ls-input" type="search" value=${q} onInput=${this.onSearch} autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" />
       </form>
+      <div class="actions"><a class="ls-btn ls-btn--small" href="#/graph"><${Icon} name="graph" small /> ${LABELS.graph}</a></div>
       ${q.trim() ? html`<p class="status" role="status">${results.length} ${results.length === 1 ? 'result' : 'results'}</p>
           <ul class="results">${results.slice(0, shown).map(r => html`<${Result} r=${r} read=${this.state.read.includes(r.n)} />`)}</ul>
           ${results.length > shown && html`<div class="more"><button class="ls-btn" type="button" onClick=${() => this.setState({ shown: shown + RESULTS_PAGE })}>More</button></div>`}`
@@ -178,11 +180,11 @@ export class App extends Component {
       <dl class="details">
         ${authors && html`<dt>Authors</dt><dd>${authors}</dd>`}
         ${r && html`<dt>Date</dt><dd>${dateOf(r)}</dd><dt>Status</dt><dd>${statusName(r.status)}</dd>`}
-        ${r?.stream && html`<dt>Stream</dt><dd>${streamName(r.stream)}</dd>`}
-        ${r?.group && html`<dt>Group</dt><dd>${r.group}</dd>`}
-        ${r?.area && html`<dt>Area</dt><dd>${r.area}</dd>`}
+        ${r?.stream && html`<dt>Stream</dt><dd><a href=${tagHref('stream', r.stream)}>${streamName(r.stream)}</a></dd>`}
+        ${r?.group && html`<dt>Group</dt><dd><a href=${tagHref('wg', r.group)}>${r.group}</a></dd>`}
+        ${r?.area && html`<dt>Area</dt><dd><a href=${tagHref('area', r.area)}>${r.area}</a></dd>`}
         ${r?.pages > 0 && html`<dt>Pages</dt><dd>${r.pages}</dd>`}
-        ${r?.keywords.length > 0 && html`<dt>Tags</dt><dd>${r.keywords.join(', ')}</dd>`}
+        ${r?.keywords.length > 0 && html`<dt>Tags</dt><dd>${r.keywords.map((k, i) => html`${i ? ', ' : ''}<a href=${tagHref('kw', k)}>${k}</a>`)}</dd>`}
         <${Relations} data=${data} label="Obsoletes" list=${data.obsoletes.get(doc.n)} />
         <${Relations} data=${data} label="Obsoleted by" list=${data.obsoletedBy.get(doc.n)} />
         <${Relations} data=${data} label="Updates" list=${data.updates.get(doc.n)} />
@@ -215,6 +217,7 @@ export class App extends Component {
         <button class="ls-btn ls-btn--small" type="button" aria-pressed=${isFav} aria-label=${isFav ? 'Remove from favourites' : 'Add to favourites'} onClick=${() => this.toggleFavourite(doc.n)}><${Icon} name="star" small /></button>
         <button class="ls-btn ls-btn--small" type="button" aria-label="Copy link" onClick=${this.copyLink}><${Icon} name="link" small /></button>
         <button class="ls-btn ls-btn--small" type="button" aria-pressed=${textMode === 'prose'} aria-label="Reflowed text" onClick=${this.toggleMode}>Aa</button>
+        <a class="ls-btn ls-btn--small" href=${graphHref({ kind: 'rfc', n: doc.n, hops: 1 })} aria-label=${LABELS.graph}><${Icon} name="graph" small /></a>
         <a class="ls-out" href=${officialUrl(doc.n)} target="_blank" rel="noopener noreferrer">RFC Editor</a>
       </div>
       ${newer?.length > 0 && html`<${Notice}>Obsoleted by ${newer.map((n, i) => html`${i ? ', ' : ''}<a href=${rfcHref(n)}>RFC ${n}</a>`)}.<//>`}
@@ -242,7 +245,7 @@ export class App extends Component {
       </div></header>
       <main id="main" class="page">${dataError
         ? html`<${Notice} kind="error" icon="alert">Could not load the index. <button class="ls-btn ls-btn--small" type="button" onClick=${() => location.reload()}><${Icon} name="retry" small /> Retry</button><//>`
-        : !data ? html`<p class="status" role="status">Loading</p>` : route.view === 'rfc' ? this.renderReader() : this.renderHome()}</main>
+        : !data ? html`<p class="status" role="status">Loading</p>` : route.view === 'rfc' ? this.renderReader() : route.view === 'graph' ? html`<${GraphView} key=${graphHref(route)} data=${data} route=${route} read=${this.state.read} favourites=${this.state.favourites} />` : this.renderHome()}</main>
       <footer class="page foot">
         <p>Unofficial. <a href=${REPO_URL} target="_blank" rel="noopener noreferrer">Source</a> · ${updateState.ready
           ? html`<button class="quiet" type="button" onClick=${apply}>Update ready: restart</button>`

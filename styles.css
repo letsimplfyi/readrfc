@@ -54,6 +54,56 @@ button.quiet:disabled { color: var(--muted); }
 .rfc-text--prose .prose-p { max-width: var(--measure); margin: 0 0 var(--space-3); font-family: var(--font-read); }
 .rfc-text--prose .rfc { margin-bottom: var(--space-3); }
 
+/* Graph: drawn once, never animated. Meaning is shape, fill, stroke and marks, never colour. */
+.count { color: var(--muted); }
+.segmented { display: inline-flex; }
+.segmented .ls-btn + .ls-btn { margin-left: -2px; }
+.segmented .ls-btn[aria-current="true"], .actions .ls-btn[aria-pressed="true"] { color: var(--page); background: var(--ink); }
+.graph-scroll { max-width: 100%; max-height: 70vh; margin: 0 calc(var(--pad, var(--space-4)) * -1) var(--space-3); overflow: auto; border-block: 1px solid var(--line); }
+@media (min-width: 600px) { .graph-scroll { margin-inline: 0; border: 1px solid var(--line); } }
+.graph { display: block; max-width: none; font-family: var(--font-ui); }
+.graph--v { width: 100%; height: auto; }
+.graph-flow { margin: 0 calc(var(--pad, var(--space-4)) * -1) var(--space-3); border-block: 1px solid var(--line); }
+.graph text { fill: var(--ink); font-size: var(--text-secondary); font-weight: 500; }
+.tick line, .lane line { stroke: var(--line); stroke-width: 1; }
+.tick text, .lane text { fill: var(--muted); font-size: var(--text-secondary); }
+.lane text { font-weight: 700; text-transform: uppercase; }
+.edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.edge--u { stroke-dasharray: 5 4; }
+.edge--on { stroke: var(--ink); stroke-width: 3; }
+.edge--off { stroke: var(--line); }
+.arrow-solid { fill: var(--ink); stroke: none; }
+.arrow-open { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.node { cursor: pointer; outline: none; }
+.node-hit { fill: transparent; stroke: none; }
+.node-box { fill: var(--page); stroke: var(--ink); stroke-width: 1; }
+.node-inner { fill: none; stroke: var(--ink); stroke-width: 1; }
+.node--IS .node-box { fill: var(--ink); }
+.node--DS .node-box, .node--PS .node-box { stroke-width: 2.5; }
+.node--HIS .node-box { stroke-dasharray: 4 3; stroke-width: 2; }
+.node-ring { fill: none; stroke: var(--ink); stroke-width: 3; }
+.node-strike { stroke: var(--ink); stroke-width: 2; }
+.node--IS .node-strike, .node--IS .node-check { stroke: var(--page); }
+.node-check { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: square; }
+.node-fav { fill: var(--ink); }
+.node-label--centre { font-weight: 700; }
+.node-label--replaced { fill: var(--muted); }
+.node:hover .node-label, .node:focus-visible .node-label { text-decoration: underline; }
+.node:focus-visible .node-box { outline: 3px solid var(--ink); outline-offset: 3px; }
+.key { margin: 0 0 var(--space-3); padding: 0; list-style: none; font-size: var(--text-secondary); }
+.key li { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch-min); }
+.key-node { width: 2rem; height: 1.5rem; flex: none; }
+@media (max-width: 700px) { .panel { position: sticky; bottom: 0; z-index: 4; max-height: 45vh; background: var(--page); margin: 0 calc(var(--pad, var(--space-4)) * -1); padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom)); overflow-y: auto; border-inline: 0; border-bottom: 0; } }
+.panel .abstract { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.panel h2 { margin: 0 0 var(--space-1); padding: 0; border: 0; color: var(--ink); font-size: var(--text-section); }
+.panel-title { display: block; font-size: var(--text-body); font-weight: 500; }
+.panel .meta { margin: 0 0 var(--space-2); color: var(--muted); font-size: var(--text-secondary); }
+.table-wrap { max-width: 100%; margin: 0 0 var(--space-3); overflow-x: auto; }
+.graph-table { border-collapse: collapse; font-size: var(--text-secondary); }
+.graph-table th, .graph-table td { padding: var(--space-2) var(--space-3); text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.graph-table td:nth-child(2) { min-width: 14rem; }
+.graph-table a { display: inline-block; min-height: var(--touch-min); padding: var(--space-2) 0; }
+
 .foot { border-top: var(--rule); color: var(--muted); font-size: var(--text-secondary); }
 .foot p { max-width: var(--measure); margin: 0 0 var(--space-2); }
 .toast-wrap { position: fixed; z-index: 20; left: 0; right: 0; bottom: calc(var(--space-5) + env(safe-area-inset-bottom)); display: flex; justify-content: center; pointer-events: none; }

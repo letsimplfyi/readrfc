@@ -6,7 +6,7 @@
 const CACHE = 'readrfc-shell-dev';
 const SHELL = [
   './', './styles.css', './manifest.json',
-  './js/config.js', './js/route.js', './js/rfc.js', './js/index.js', './js/store.js', './js/icons.js', './js/ui.js', './js/main.js', './js/theme.js', './js/update.js',
+  './js/config.js', './js/route.js', './js/rfc.js', './js/index.js', './js/graph.js', './js/graphview.js', './js/store.js', './js/icons.js', './js/ui.js', './js/main.js', './js/theme.js', './js/update.js',
   './data/index.json', './data/graph.json',
   './brand/tokens/tokens.css', './brand/css/base.css', './brand/css/components.css',
   './brand/fonts/atkinson-hyperlegible-mono-latin.woff2', './brand/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2',

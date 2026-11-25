@@ -155,3 +155,86 @@ test('a phone starts in reflowed mode, a desktop in the published layout, and th
   await desk.page.locator('.rfc-text--mono').waitFor();
   await desk.context.close();
 });
+
+test('graph: pick a way in, open an RFC graph, nodes are links, select shows the panel, the list matches the picture', async () => {
+  const { page, context, outside, violations } = await open('#/graph');
+  await page.getByRole('heading', { name: 'Areas' }).waitFor();
+  await page.getByRole('link', { name: /^sec / }).click();
+  await page.waitForURL(/#\/graph\/tag\/area%3Asec/);
+  await page.locator('a.node').first().waitFor();
+  assert.ok((await page.locator('a.node').count()) > 10);
+  await page.goto(base + '/#/graph/rfc/2616');
+  await page.locator('a.node').first().waitFor();
+  const nodes = await page.locator('a.node').count();
+  assert.ok(nodes >= 3, 'the HTTP lineage has several RFCs');
+  assert.match(await page.locator('a.node--centre').getAttribute('aria-label'), /^RFC 2616, Hypertext Transfer Protocol/);
+  await page.locator('a.node[data-n="7230"]').click({ force: true });
+  await page.waitForURL(/sel=7230/);
+  await page.locator('.panel').getByRole('link', { name: 'Read' }).waitFor();
+  assert.match(await page.locator('.panel').innerText(), /RFC 7230[\s\S]*Message Syntax and Routing[\s\S]*Proposed Standard/);
+  await page.getByRole('button', { name: 'List' }).click();
+  assert.equal(await page.locator('.graph-table tbody tr').count(), nodes);
+  assert.match(await page.locator('.graph-table tr', { hasText: 'Message Syntax and Routing' }).innerText(), /2616/);
+  await page.locator('.panel').getByRole('link', { name: 'Read' }).click();
+  await page.waitForURL(/#\/rfc\/7230$/);
+  assert.deepEqual(outside, []); assert.deepEqual(violations, []);
+  await context.close();
+});
+
+test('graph: keyboard works (tab to a node, Enter selects), an RFC with no links is a calm single node, hops widen the graph', async () => {
+  const { page, context } = await open('#/graph/rfc/1234');
+  await page.locator('a.node').first().waitFor();
+  assert.equal(await page.locator('a.node').count(), 1);
+  await context.close();
+  const two = await open('#/graph/rfc/2616');
+  await two.page.locator('a.node').first().waitFor();
+  const one = await two.page.locator('a.node').count();
+  await two.page.getByRole('link', { name: '2 links' }).click();
+  await two.page.waitForFunction(n => document.querySelectorAll('a.node').length > n, one);
+  await two.page.locator('a.node').first().focus();
+  await two.page.keyboard.press('Enter');
+  await two.page.locator('.panel').waitFor();
+  await two.page.keyboard.press('Enter');
+  await two.page.locator('.panel').waitFor({ state: 'detached' });
+  await two.context.close();
+});
+
+test('graph: from the reader, the graph button and the tags lead into it; read marks show in the picture', async () => {
+  const { page, context } = await open('#/rfc/9110');
+  await page.locator('.rfc').first().waitFor();
+  await page.getByText('Details').click();
+  await page.locator('.details a', { hasText: 'httpbis' }).click();
+  await page.waitForURL(/graph\/tag\/wg%3Ahttpbis/);
+  await page.locator('a.node').first().waitFor();
+  assert.ok(await page.locator('a.node[data-n="9110"] .node-check').count() === 1, 'opened RFCs carry a check mark');
+  await context.close();
+});
+
+test('graph: a phone shows it without sideways page scroll, with 44px touch targets on the nodes', async () => {
+  const { page, context } = await open('#/graph/rfc/793', { viewport: { width: 320, height: 640 } });
+  await page.locator('a.node').first().waitFor();
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  const hit = await page.locator('.node-hit').first().boundingBox();
+  assert.ok(hit.width >= 44 && hit.height >= 44);
+  await context.close();
+});
+
+test('graph on a phone: one vertical timeline in the page (no inner scroller), the panel is pinned in view after a tap, controls fit one row', async () => {
+  const { page, context } = await open('#/graph/rfc/2616?hops=2', { viewport: { width: 390, height: 780 } });
+  await page.locator('a.node').first().waitFor();
+  assert.equal(await page.locator('.graph-scroll').count(), 0);
+  assert.equal(await page.locator('.graph--v').count(), 1);
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  const tops = await page.locator('.actions').first().locator('.ls-btn').evaluateAll(els => els.map(e => Math.round(e.getBoundingClientRect().top)));
+  assert.equal(new Set(tops).size, 1, 'the hop and list controls share one row');
+  await page.locator('a.node[data-n="2616"]').click({ force: true });
+  const panel = page.locator('.panel');
+  await panel.waitFor();
+  const box = await panel.boundingBox();
+  assert.ok(box.y >= 0 && box.y + box.height <= 781, 'the panel is on screen');
+  await context.close();
+  const wide = await open('#/graph/rfc/2616?hops=2', { viewport: { width: 1100, height: 800 } });
+  await wide.page.locator('a.node').first().waitFor();
+  assert.equal(await wide.page.locator('.graph-scroll').count(), 1);
+  await wide.context.close();
+});
