@@ -20,6 +20,7 @@ jobs:
           node-version: 22
       - run: node tools/build-index.mjs
       - run: node tools/build-topics.mjs
+      - run: node tools/build-people.mjs
       - run: node --test tests/*.test.js
       - name: Commit if changed
         run: |

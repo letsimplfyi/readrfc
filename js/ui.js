@@ -128,7 +128,7 @@ export class App extends Component {
   toggleTheme = () => { const theme = this.state.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = theme; store.save('theme', theme); this.setState({ theme }); };
   toggleMode = () => { const textMode = this.state.textMode === 'prose' ? 'mono' : 'prose'; store.save('textMode', textMode); this.setState({ textMode }); };
   toggleFavourite = n => { const favourites = toggle(this.state.favourites, n, FAVOURITES_MAX); store.save('favourites', favourites); this.setState({ favourites }); };
-  copyLink = async () => { const url = location.href; try { await navigator.clipboard.writeText(url); this.toast('Link copied'); } catch { this.toast(url); } };
+  copyLink = async () => { const url = this.state.doc ? `${location.origin}/r/${this.state.doc.n}` : location.href; try { await navigator.clipboard.writeText(url); this.toast('Link copied'); } catch { this.toast(url); } };
   checkUpdates = async () => {
     this.setState({ checking: true });
     const result = await checkForUpdate({ force: true });
@@ -179,14 +179,16 @@ export class App extends Component {
     const authors = m?.authors?.join(', ');
     return html`<details class="details-fold"><summary>${LABELS.details}</summary>
       <dl class="details">
-        ${authors && html`<dt>Authors</dt><dd>${authors}</dd>`}
+        ${r?.authors.length > 0 ? html`<dt>Authors</dt><dd>${r.authors.map((a, i) => html`${i ? ', ' : ''}<a href=${tagHref('author', a)}>${a}</a>`)}</dd>` : authors && html`<dt>Authors</dt><dd>${authors}</dd>`}
         ${r && html`<dt>Date</dt><dd>${dateOf(r)}</dd><dt>Status</dt><dd>${statusName(r.status)}</dd>`}
         ${r?.stream && html`<dt>Stream</dt><dd><a href=${tagHref('stream', r.stream)}>${streamName(r.stream)}</a></dd>`}
         ${r?.group && html`<dt>Group</dt><dd><a href=${tagHref('wg', r.group)}>${r.group}</a></dd>`}
         ${r?.area && html`<dt>Area</dt><dd><a href=${tagHref('area', r.area)}>${r.area}</a></dd>`}
         ${r?.pages > 0 && html`<dt>Pages</dt><dd>${r.pages}</dd>`}
         ${r?.keywords.length > 0 && html`<dt>Tags</dt><dd>${r.keywords.map((k, i) => html`${i ? ', ' : ''}<a href=${tagHref('kw', k)}>${k}</a>`)}</dd>`}
-        ${r?.topics.length > 0 && html`<dt>About</dt><dd class="abouts">${r.topics.map(t => html`<${About} key=${t.q} topic=${t} />`)}</dd>`}
+        ${(r?.people.length > 0 || r?.topics.length > 0) && html`<dt>About</dt><dd class="abouts">
+          ${r.people.map(p => html`<${About} key=${`${p.q}-${p.name}`} topic=${p} more=${{ href: tagHref('author', p.name), label: 'Their RFCs' }} />`)}
+          ${r.topics.map(t => html`<${About} key=${t.q} topic=${t} more=${{ href: tagHref('topic', t.q), label: 'Same topic' }} />`)}</dd>`}
         <${Relations} data=${data} label="Obsoletes" list=${data.obsoletes.get(doc.n)} />
         <${Relations} data=${data} label="Obsoleted by" list=${data.obsoletedBy.get(doc.n)} />
         <${Relations} data=${data} label="Updates" list=${data.updates.get(doc.n)} />

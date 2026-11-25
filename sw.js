@@ -7,7 +7,7 @@ const CACHE = 'readrfc-shell-dev';
 const SHELL = [
   './', './styles.css', './manifest.json',
   './js/config.js', './js/route.js', './js/rfc.js', './js/index.js', './js/graph.js', './js/graphview.js', './js/about.js', './js/wiki.js', './js/store.js', './js/icons.js', './js/ui.js', './js/main.js', './js/theme.js', './js/update.js',
-  './data/index.json', './data/graph.json', './data/topics.json',
+  './data/index.json', './data/graph.json', './data/topics.json', './data/people.json',
   './brand/tokens/tokens.css', './brand/css/base.css', './brand/css/components.css',
   './brand/fonts/atkinson-hyperlegible-mono-latin.woff2', './brand/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2',
   './brand/fonts/courier-prime-400-latin.woff2', './brand/fonts/courier-prime-700-latin.woff2', './brand/fonts/noto-serif-malayalam.woff2',
@@ -32,6 +32,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return; // RFC texts stay on the network
+  if (url.pathname.startsWith('/r/')) return; // share pages carry their own preview tags and redirect into the app
   if (event.request.mode === 'navigate') {
     // Cache "./" (not index.html): Pages redirects /index.html -> /, and a cached redirect cannot answer a navigation.
     event.respondWith(caches.open(CACHE).then(cache => cache.match('./')).then(cached => cached || fetch(event.request)));

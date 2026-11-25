@@ -42,6 +42,8 @@ jobs:
         run: |
           mkdir -p dist
           cp -R index.html styles.css manifest.json sw.js _headers robots.txt sitemap.xml LICENSE js vendor brand icons data dist/
+          # One small static page per RFC with its own OpenGraph tags, so shared links preview properly.
+          node tools/build-share.mjs dist/r
           # Stamp one version into the service worker cache name and the app, so every deploy busts every cache.
           V="$(date -u +%Y.%m.%d)-${GITHUB_RUN_NUMBER}"
           sed -i "s/readrfc-shell-dev/readrfc-shell-v$V/" dist/sw.js

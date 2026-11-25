@@ -2,9 +2,9 @@
 //   #/                  home          #/?q=http          search
 //   #/rfc/9110          reader        #/rfc/9110/section-5.1   reader at a heading
 //   #/graph             pick a way in #/graph/rfc/9110?hops=2&sel=2616   around one RFC
-//   #/graph/tag/area:sec  one tag (area, wg, stream, kw, topic)   #/graph/year/1998-2003   a range of years
+//   #/graph/tag/area:sec  one tag (area, wg, stream, kw, topic, author)   #/graph/year/1998-2003   a range of years
 // Unknown or malformed routes fall back to home, never to an error page.
-export const TAGS = ['area', 'wg', 'stream', 'kw', 'topic'];
+export const TAGS = ['area', 'wg', 'stream', 'kw', 'topic', 'author'];
 const num = s => (/^\d{1,5}$/.test(s) && Number(s) > 0 ? Number(s) : null);
 
 export function parseRoute(hash) {
@@ -25,7 +25,7 @@ export function parseRoute(hash) {
     if (parts[1] === 'rfc' && num(parts[2] || '')) return { ...base, kind: 'rfc', n: num(parts[2]), hops: params.get('hops') === '2' ? 2 : 1 };
     if (parts[1] === 'tag') {
       const [tag, ...rest] = (parts[2] || '').split(':'), value = rest.join(':');
-      if (TAGS.includes(tag) && /^[A-Za-z0-9.\-/ ]{1,40}$/.test(value)) return { ...base, kind: 'tag', tag, value };
+      if (TAGS.includes(tag) && /^[\p{L}\p{N}.'’\-/ ]{1,70}$/u.test(value)) return { ...base, kind: 'tag', tag, value };
     }
     if (parts[1] === 'year') {
       const m = (parts[2] || '').match(/^(\d{4})-(\d{4})$/);

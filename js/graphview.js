@@ -9,7 +9,7 @@ import { Icon } from './icons.js';
 import { About } from './about.js';
 const html = htm.bind(h);
 
-const TAG_LABEL = { area: 'Area', wg: 'Group', stream: 'Stream', kw: 'Tag', topic: 'Topic' };
+const TAG_LABEL = { area: 'Area', wg: 'Group', stream: 'Stream', kw: 'Tag', topic: 'Topic', author: 'Author' };
 const KEY_STATUSES = ['IS', 'PS', 'BCP', 'INF', 'HIS'];
 const STAR = 'M0 -5L1.5 -1.5L5 -1.5L2.2 .8L3.2 4.5L0 2.4L-3.2 4.5L-2.2 .8L-5 -1.5L-1.5 -1.5Z';
 
@@ -91,6 +91,7 @@ export class GraphView extends Component {
       <h2>Years</h2><ul class="ls-tags">${c.decades.map(d => html`<li><a class="ls-tag" href=${graphHref({ kind: 'year', from: d, to: d + 9 })}>${d}s</a></li>`)}</ul>
       ${c.topics.length > 0 && html`<h2>Topics</h2><ul class="ls-tags">${c.topics.slice(0, 40).map(t => html`<li><a class="ls-tag" href=${tagHref('topic', t.value)}>${t.label} <span class="count">${t.n}</span></a></li>`)}</ul>
       <details class="details-fold"><summary>More topics</summary><ul class="ls-tags">${c.topics.slice(40).map(t => html`<li><a class="ls-tag" href=${tagHref('topic', t.value)}>${t.label} <span class="count">${t.n}</span></a></li>`)}</ul></details>`}
+      <h2>Authors</h2><ul class="ls-tags">${c.authors.slice(0, 40).map(a => chip('author', a))}</ul>
       <h2>Tags</h2><ul class="ls-tags">${c.keywords.map(a => chip('kw', a))}</ul>
       <details class="details-fold"><summary>Groups</summary><ul class="ls-tags">${c.groups.slice(0, 60).map(a => chip('wg', a))}</ul></details>
     </section>`;
@@ -160,7 +161,7 @@ export class GraphView extends Component {
     const { data, read, favourites } = this.props, n = this.state.sel, r = n && data.byNumber.get(n);
     if (!r) return null;
     const abstract = this.state.abstracts[n], newest = c.newest && c.newest.n !== n ? c.newest : null;
-    const chips = [r.area && ['area', r.area], r.group && ['wg', r.group], r.stream && ['stream', r.stream], ...r.keywords.map(k => ['kw', k])].filter(Boolean);
+    const chips = [...r.authors.map(a => ['author', a]), r.area && ['area', r.area], r.group && ['wg', r.group], r.stream && ['stream', r.stream], ...r.keywords.map(k => ['kw', k])].filter(Boolean);
     return html`<aside class="ls-card panel" aria-label=${`RFC ${n}`}>
       <h2>RFC ${n} <span class="panel-title">${r.title}</span></h2>
       <p class="meta">${r.year} · ${statusName(r.status)}${read.includes(n) ? ' · read' : ''}${favourites.includes(n) ? ' · favourite' : ''}</p>
@@ -170,9 +171,17 @@ export class GraphView extends Component {
         ${newest && html`<a class="ls-btn" href=${rfcHref(newest.n)}>Newest: RFC ${newest.n}</a>`}
       </div>
       ${abstract === null ? html`<p class="status" role="status">Loading</p>` : abstract ? html`<p class="abstract">${abstract.length > 360 ? `${abstract.slice(0, 360).replace(/\s+\S*$/, '')}…` : abstract}</p>` : null}
-      ${r.topics.map(t => html`<${About} key=${t.q} topic=${t} />`)}
+      ${r.people.map(p => html`<${About} key=${`${p.q}-${p.name}`} topic=${p} more=${{ href: tagHref('author', p.name), label: 'Their RFCs' }} />`)}
+      ${r.topics.map(t => html`<${About} key=${t.q} topic=${t} more=${{ href: tagHref('topic', t.q), label: 'Same topic' }} />`)}
       ${chips.length > 0 && html`<ul class="ls-tags">${chips.map(([tag, value]) => html`<li><a class="ls-tag" href=${tagHref(tag, value)}>${tag === 'stream' ? streamName(value) : value}</a></li>`)}</ul>`}
     </aside>`;
+  }
+
+  // On a topic or author graph: who or what it is, closed until opened. Only confirmed people are offered.
+  renderSubject(route) {
+    const { data } = this.props;
+    const subject = route.kind === 'tag' && route.tag === 'topic' ? data.topicByQ.get(route.value) : route.kind === 'tag' && route.tag === 'author' ? data.personByName.get(route.value) : null;
+    return subject ? html`<${About} key=${subject.q} topic=${subject} />` : null;
   }
 
   renderKey() {
@@ -196,6 +205,7 @@ export class GraphView extends Component {
     return html`<section>
       <div class="titlebar"><a class="back" href=${back} aria-label="Back"><${Icon} name="back" /></a>
         <h1>${graphTitle(route, data)}${route.kind === 'rfc' && data.byNumber.get(route.n) ? html`<span class="subtitle">${data.byNumber.get(route.n).title}</span>` : ''}</h1></div>
+      ${this.renderSubject(route)}
       <p class="status" role="status">${graph.records.length} ${graph.records.length === 1 ? 'RFC' : 'RFCs'}${graph.capped ? ` of ${graph.total}` : ''}</p>
       <div class="actions">
         ${route.kind === 'rfc' && html`<div class="segmented" role="group" aria-label="Distance">

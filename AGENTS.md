@@ -76,6 +76,7 @@ data/
   index.json         GENERATED search index: one compact record per RFC (see "The index")
   graph.json         GENERATED edges (obsoletes, updates) as number pairs
   topics.json        GENERATED from Wikidata: each RFC's subject, its Wikipedia article, its Commons category
+  people.json        GENERATED from Wikidata + the index: authors CONFIRMED per RFC as a known person with a Wikipedia article
 js/
   main.js            clears #app, renders <App/>, starts the update machinery
   ui.js              the interface: App, Home, Reader, GraphView, Recent (class components, htm)
@@ -106,6 +107,8 @@ tests/
 tools/
   build-index.mjs    rfc-index.xml -> data/index.json + data/graph.json (CI and `npm run index`)
   build-topics.mjs   Wikidata -> data/topics.json (CI and `npm run topics`); the only place Wikidata is contacted
+  build-people.mjs   Wikidata + data/index.json -> data/people.json (CI and `npm run people`): confirmed matches only
+  build-share.mjs    data/index.json -> dist/r/<n>.html, one static OpenGraph page per RFC (the deploy workflow runs it)
   sync-brand.mjs     vendors the brand (npm run brand / brand:check), from Commoner
   serve.py           local static server
 .github/workflows/

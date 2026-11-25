@@ -1,11 +1,11 @@
 import { h, Component } from '../vendor/preact.module.js';
 import htm from '../vendor/htm.module.js';
 import { fetchSummary, pageUrl, commonerUrl } from './wiki.js';
-import { tagHref } from './route.js';
 import { Icon } from './icons.js';
 const html = htm.bind(h);
 
-// One topic, closed until someone opens it: only then is Wikipedia asked, once. topic: { q, label, wiki, cat }.
+// One topic or person, closed until someone opens it: only then is Wikipedia asked, once. topic: { q, label, wiki, cat }.
+// `more` is the link to the graph of everything related: { href, label }.
 export class About extends Component {
   state = { status: 'idle', summary: null };
   abort = null;
@@ -24,7 +24,7 @@ export class About extends Component {
       if (!ac.signal.aborted) this.setState({ status: summary ? 'ready' : 'none', summary });
     } catch { if (!ac.signal.aborted) this.setState({ status: 'error' }); }
   }
-  render({ topic }, { status, summary }) {
+  render({ topic, more }, { status, summary }) {
     return html`<details class="about" onToggle=${this.onToggle}><summary>${topic.label}</summary>
       <div class="about-body">
         ${status === 'loading' && html`<p class="status" role="status">Loading</p>`}
@@ -36,7 +36,7 @@ export class About extends Component {
         <div class="actions">
           ${topic.wiki && html`<a class="ls-out" href=${pageUrl(topic.wiki)} target="_blank" rel="noopener noreferrer">Wikipedia</a>`}
           ${topic.cat && html`<a class="ls-out" href=${commonerUrl(topic.cat)} target="_blank" rel="noopener noreferrer">Photos on Commoner</a>`}
-          <a class="ls-btn ls-btn--small" href=${tagHref('topic', topic.q)}><${Icon} name="graph" small /> Same topic</a>
+          ${more && html`<a class="ls-btn ls-btn--small" href=${more.href}><${Icon} name="graph" small /> ${more.label}</a>`}
         </div>
       </div></details>`;
   }

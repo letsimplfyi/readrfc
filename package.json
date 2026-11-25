@@ -11,6 +11,7 @@
     "brand": "node tools/sync-brand.mjs",
     "brand:check": "node tools/sync-brand.mjs --check",
     "index": "node tools/build-index.mjs",
-    "topics": "node tools/build-topics.mjs"
+    "topics": "node tools/build-topics.mjs",
+    "people": "node tools/build-people.mjs"
   }
 }

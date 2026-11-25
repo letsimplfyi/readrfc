@@ -22,7 +22,8 @@ test('the generated index exists, is within budget and matches the shape the app
   assert.ok(read('data/index.json').length < 1.5 * 1024 * 1024, 'index.json over budget');
   assert.ok(read('data/graph.json').length < 100 * 1024, 'graph.json over budget');
   assert.ok(index.rfcs.length > 9000 && graph.edges.length > 3000);
-  assert.equal(index.rfcs[0].length, 10);
+  assert.equal(index.rfcs[0].length, 11);
+  assert.ok(index.authors.length > 6000 && index.rfcs.every(r => r[10].length > 0 && r[10].every(i => index.authors[i])), 'every RFC has authors that exist in the table');
   assert.ok(index.rfcs.every((r, i) => i === 0 || r[0] > index.rfcs[i - 1][0]), 'sorted by number');
 });
 
@@ -32,7 +33,7 @@ test('service worker: precaches every runtime file, versions its cache with the 
   for (const file of shell) assert.ok(exists(file), `precached but missing: ${file}`);
   for (const [, file] of read('index.html').matchAll(/(?:href|src)="\.\/([^"]+)"/g)) assert.ok(shell.includes(file), `index.html loads ${file} but sw.js does not precache it`);
   for (const file of readdirSync(new URL('../js/', import.meta.url))) assert.ok(shell.includes(`js/${file}`), `js/${file} is not precached`);
-  for (const file of ['data/index.json', 'data/graph.json', 'data/topics.json']) assert.ok(shell.includes(file), file);
+  for (const file of ['data/index.json', 'data/graph.json', 'data/topics.json', 'data/people.json']) assert.ok(shell.includes(file), file);
   for (const icon of JSON.parse(read('manifest.json')).icons) assert.ok(shell.includes(icon.src), icon.src);
   assert.equal(sw.match(/const CACHE = 'readrfc-shell-([^']+)'/)[1], read('js/config.js').match(/APP_VERSION = '([^']+)'/)[1], 'CACHE and APP_VERSION must carry the same version');
   assert.match(sw, /cache: 'reload'/); assert.match(sw, /skipWaiting/); assert.match(sw, /SKIP_WAITING/); assert.match(sw, /url\.origin !== self\.location\.origin\) return/);

@@ -24,7 +24,7 @@ const ids = (block, tag) => [...(text(block, tag) || '').matchAll(/<doc-id>RFC(\
 const table = () => { const list = []; return { list, at: v => { let i = list.indexOf(v); if (i < 0) { i = list.length; list.push(v); } return i; } }; };
 
 export function build(xml) {
-  const streams = table(), groups = table(), areas = table(), keywords = table();
+  const streams = table(), groups = table(), areas = table(), keywords = table(), authors = table();
   const rfcs = [], edges = [];
   for (const chunk of xml.split('<rfc-entry>').slice(1)) {
     const block = chunk.split('</rfc-entry>')[0];
@@ -38,15 +38,16 @@ export function build(xml) {
     const area = text(block, 'area'), wg = text(block, 'wg_acronym');
     const kws = [...new Set([...(text(block, 'keywords') || '').matchAll(/<kw>(.*?)<\/kw>/g)].map(m => decode(m[1]).toLowerCase()).filter(k => KEYWORDS.has(k)))].sort().slice(0, 5);
     const pages = Number(text(block, 'page-count')) || 0;
+    const people = [...new Set([...block.matchAll(/<author>([\s\S]*?)<\/author>/g)].map(m => decode((m[1].match(/<name>([\s\S]*?)<\/name>/) || [])[1] || '')).filter(Boolean))];
     rfcs.push([n, decode(text(block, 'title') || ''), year, month, status, stream ? streams.at(stream.toLowerCase()) : -1,
-      area ? areas.at(area) : -1, wg && wg !== 'NON WORKING GROUP' ? groups.at(wg) : -1, kws.map(keywords.at), pages]);
+      area ? areas.at(area) : -1, wg && wg !== 'NON WORKING GROUP' ? groups.at(wg) : -1, kws.map(keywords.at), pages, people.map(authors.at)]);
     for (const to of ids(block, 'obsoletes')) edges.push([n, to, 'o']);
     for (const to of ids(block, 'updates')) edges.push([n, to, 'u']);
   }
   rfcs.sort((a, b) => a[0] - b[0]);
   edges.sort((a, b) => a[0] - b[0] || a[1] - b[1] || (a[2] < b[2] ? -1 : 1));
   return {
-    index: { v: 1, streams: streams.list, areas: areas.list, groups: groups.list, keywords: keywords.list, fields: ['n', 't', 'y', 'm', 's', 'x', 'a', 'w', 'k', 'p'], rfcs },
+    index: { v: 1, streams: streams.list, areas: areas.list, groups: groups.list, keywords: keywords.list, authors: authors.list, fields: ['n', 't', 'y', 'm', 's', 'x', 'a', 'w', 'k', 'p', 'u'], rfcs },
     graph: { v: 1, kinds: { o: 'obsoletes', u: 'updates' }, edges },
   };
 }

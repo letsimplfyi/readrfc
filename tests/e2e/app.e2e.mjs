@@ -47,7 +47,8 @@ async function open(hash = '#/', { viewport = { width: 390, height: 780 }, stora
     if (url.origin === 'https://en.wikipedia.org') {
       wiki.push(url.pathname);
       if (url.pathname === '/api/rest_v1/page/summary/HTTP') return route.fulfill({ json: { type: 'standard', title: 'HTTP', description: 'Application layer protocol', extract: 'HTTP is an application layer protocol in the Internet protocol suite.', thumbnail: { source: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/HTTP_logo.svg/330px-HTTP_logo.svg.png', width: 330, height: 177 } } });
-      return route.fulfill({ status: 404, body: '' });
+      const title = decodeURIComponent(url.pathname.split('/').pop());
+      return route.fulfill({ json: { type: 'standard', title, description: 'Person', extract: `About ${title.replace(/_/g, ' ')}.`, thumbnail: { source: `https://upload.wikimedia.org/wikipedia/commons/thumb/x/${title}.jpg`, width: 200, height: 250 } } });
     }
     if (url.origin === 'https://upload.wikimedia.org' || url.origin === 'https://thumb.wikimedia.org') { images.push(url.href); return route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="330" height="177"/>' }); }
     outside.push(url.href); return route.abort();
@@ -77,7 +78,7 @@ test('reader: title, details, contents, section links, cross-references, and the
   assert.match(await page.locator('h1').innerText(), /RFC 9110\s+HTTP Semantics/);
   assert.ok(!(await page.locator('.rfc-text').innerText()).includes('[Page 1]'));
   await page.getByText('Details').click();
-  assert.match(await page.locator('.details').innerText(), /R\. Fielding, Ed\.[\s\S]*Internet Standard[\s\S]*Obsoletes\s+RFC 2818/);
+  assert.match(await page.locator('.details').innerText(), /R\. Fielding, M\. Nottingham, J\. Reschke[\s\S]*Internet Standard[\s\S]*Obsoletes\s+RFC 2818/);
   await page.getByText('Contents', { exact: true }).click();
   await page.locator('.toc a', { hasText: 'Collected ABNF' }).click();
   await page.waitForURL(/section-A$/);
@@ -273,5 +274,39 @@ test('About: opening a topic graph asks Wikipedia nothing', async () => {
   const { page, context, wiki } = await open('#/graph/tag/topic:Q8777');
   await page.locator('a.node').first().waitFor();
   assert.deepEqual(wiki, []);
+  await context.close();
+});
+
+test('authors: names in Details are links to an author graph; search finds an author; the graph is capped honestly', async () => {
+  const { page, context } = await open('#/');
+  await page.getByLabel('Search').fill('postel');
+  await page.locator('.result').first().waitFor();
+  assert.ok((await page.locator('.result').count()) >= 40, 'Postel wrote many RFCs');
+  await page.goto(base + '/#/rfc/793'); await page.getByText('Details', { exact: true }).waitFor();
+  await page.getByText('Details', { exact: true }).click();
+  await page.locator('.details a', { hasText: 'J. Postel' }).click();
+  await page.waitForURL(/graph\/tag\/author%3AJ\.%20Postel/);
+  await page.locator('a.node').first().waitFor();
+  assert.match(await page.locator('h1').innerText(), /Author J\. Postel/);
+  assert.match(await page.getByRole('status').first().innerText(), /150 RFCs of \d{3}/);
+  await context.close();
+});
+
+test('people: a confirmed author gets an About card with a portrait, loaded only when opened; nobody unconfirmed does', async () => {
+  const { page, context, wiki } = await open('#/rfc/793');
+  await page.getByText('Details', { exact: true }).waitFor();
+  await page.getByText('Details', { exact: true }).click();
+  const person = page.locator('details.about', { hasText: 'Jon Postel' });
+  await person.waitFor();
+  assert.deepEqual(wiki, [], 'nothing asked on load');
+  await person.locator('summary').click();
+  await person.getByText('About Jon Postel.').waitFor();
+  await person.locator('img.about-img').waitFor();
+  assert.deepEqual(wiki, ['/api/rest_v1/page/summary/Jon_Postel']);
+  await person.getByRole('link', { name: 'Their RFCs' }).click();
+  await page.waitForURL(/graph\/tag\/author%3AJ\.%20Postel/);
+  await page.locator('details.about', { hasText: 'Jon Postel' }).waitFor();
+  await page.goto(base + '/#/rfc/1234'); await page.locator('h1').waitFor();
+  assert.equal(await page.locator('details.about').count(), 0, 'an RFC with no confirmed person and no topic has no About');
   await context.close();
 });

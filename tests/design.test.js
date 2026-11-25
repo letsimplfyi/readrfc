@@ -51,3 +51,12 @@ test('requests are anonymous', () => { for (const f of ['js/rfc.js', 'js/wiki.js
 test('Wikipedia is asked only when someone opens About, never on load', () => {
   assert.match(read('js/about.js'), /onToggle/); assert.ok(!/fetchSummary/.test(read('js/ui.js')) && !/fetchSummary/.test(read('js/graphview.js')));
 });
+
+test('OpenGraph: the page and the deploy are set up for link previews, and the worker leaves share pages to the network', () => {
+  const html = read('index.html');
+  for (const tag of ['og:type', 'og:site_name', 'og:url', 'og:title', 'og:description', 'og:image', 'og:image:width', 'og:image:height', 'og:image:alt', 'twitter:card', 'twitter:image']) assert.ok(html.includes(`"${tag}"`), tag);
+  assert.match(html, /og:image" content="https:\/\/readrfc\.letsimpl\.fyi\/icons\/og-image\.png"/);
+  assert.match(read('.github/workflows/deploy.yml'), /node tools\/build-share\.mjs dist\/r/);
+  assert.match(read('sw.js'), /pathname\.startsWith\('\/r\/'\)\) return/);
+  assert.match(read('js/ui.js'), /\/r\/\$\{this\.state\.doc\.n\}/);
+});
