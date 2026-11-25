@@ -1,7 +1,7 @@
 {
   "name": "readrfc.letsimpl.fyi",
   "private": true,
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "repository": "github:letsimplfyi/readrfc",
   "type": "module",
   "scripts": {

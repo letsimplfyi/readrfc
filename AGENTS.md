@@ -7,7 +7,7 @@ Instructions for AI agents working in this repository. Humans: read this too.
 **readrfc** (https://readrfc.letsimpl.fyi) is a reader and explorer for IETF RFCs. It has two halves: a clean reader for
 the plain text of an RFC, and a quiet graph that shows how RFCs connect (which replaced which, which updated which, when,
 and under which working group). It is an app of the **letsimpl.fyi** org, beside `commoner`, `chaikadi.fyi` and `eatsights`.
-Source: https://github.com/letsimplfyi/readrfc (AGPL-3.0).
+Source: https://github.com/letsimplfyi/readrfc (AGPL-3.0-or-later; design and docs CC BY-SA 4.0, see the brand repo's LICENSING.md).
 
 It is a **static site**. No backend, no database, no accounts, no analytics. The only build step is a tool that makes the
 search index, and it runs in CI, not in the browser. Everything below follows from that.
