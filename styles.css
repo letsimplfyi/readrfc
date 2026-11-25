@@ -1,0 +1,60 @@
+/* App styles. Branding comes from brand/ (vendored from https://brand.letsimpl.fyi, the source of truth):
+   tokens, fonts, base and ls- components load first. This file defines no colour, font or size of its own,
+   only layout, built from brand tokens. Kept small on purpose: the text is the interface. */
+body { margin: 0; background: var(--page); color: var(--ink); }
+[hidden] { display: none !important; }
+button, input { font: inherit; }
+.page { max-width: 960px; margin: 0 auto; padding: var(--space-3) var(--pad, var(--space-4)) var(--space-6); }
+.status { margin: 0 0 var(--space-3); color: var(--muted); font-size: var(--text-secondary); }
+.page h2 { margin: var(--space-5) 0 var(--space-2); padding: 0; border: 0; color: var(--muted); font-size: var(--text-secondary); font-weight: 700; }
+button.quiet { min-height: var(--touch-min); padding: 0 var(--space-1); color: inherit; background: none; border: 0; font: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+button.quiet:disabled { color: var(--muted); }
+.boot { padding: var(--space-4); }
+
+/* App bar */
+.app-header { position: sticky; top: 0; z-index: 5; background: var(--page); border-bottom: var(--rule); padding-top: env(safe-area-inset-top); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); max-width: 960px; min-height: 56px; margin: 0 auto; padding: var(--space-1) var(--pad, var(--space-4)); }
+.brand { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--touch-preferred); color: var(--ink); text-decoration: none; font-size: 1.25rem; font-weight: 700; }
+.mark { display: block; }
+:root[data-theme="dark"] .mark--light, :root:not([data-theme="dark"]) .mark--dark { display: none; }
+.theme { min-width: var(--touch-preferred); padding: 0; }
+
+/* Search and lists */
+.ls-field { margin-bottom: var(--space-3); }
+.results { margin: 0 0 var(--space-3); padding: 0; list-style: none; }
+.result { display: grid; grid-template-columns: 6.5rem 1fr; gap: 0 var(--space-3); min-height: var(--touch-preferred); padding: var(--space-2) 0; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+.result:hover .result-t { text-decoration: underline; text-underline-offset: 4px; }
+.result-n { grid-row: span 2; font-weight: 700; }
+.result-t { overflow-wrap: anywhere; }
+.result-m { color: var(--muted); font-size: var(--text-secondary); }
+@media (max-width: 480px) { .result { grid-template-columns: 1fr; } .result-n { grid-row: auto; } }
+.more { display: flex; justify-content: center; padding: var(--space-4) 0; }
+
+/* Reader */
+.titlebar { display: flex; align-items: flex-start; gap: var(--space-2); margin-bottom: var(--space-2); }
+.titlebar h1 { flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; font-size: var(--text-section); line-height: var(--leading-section); overflow-wrap: anywhere; }
+.subtitle { display: block; font-weight: 500; }
+.back { display: inline-flex; align-items: center; justify-content: center; min-width: var(--touch-preferred); min-height: var(--touch-preferred); margin-left: calc(var(--space-2) * -1); color: var(--ink); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
+.actions .ls-btn[aria-pressed="true"] { color: var(--page); background: var(--ink); }
+.details-fold { margin: 0 0 var(--space-3); }
+.details-fold > summary { min-height: var(--touch-preferred); display: flex; align-items: center; color: var(--muted); font-weight: 700; cursor: pointer; }
+.details { margin: 0 0 var(--space-3); font-size: var(--text-secondary); }
+.details dt { font-weight: 700; }
+.details dd { margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
+.abstract { max-width: var(--measure); margin: 0 0 var(--space-3); font-family: var(--font-read); }
+.toc { margin: 0 0 var(--space-3); padding: 0; list-style: none; }
+.toc a { display: block; min-height: var(--touch-min); padding: var(--space-2) 0; color: var(--ink); overflow-wrap: anywhere; }
+.toc-2 { padding-left: var(--space-4); }
+.toc-3 { padding-left: var(--space-6); }
+.rfc-text { margin-top: var(--space-4); }
+.rfc { max-width: 74ch; margin: 0; padding: 0; font-family: var(--font-ui); font-size: var(--text-body); line-height: var(--leading-body); white-space: pre-wrap; overflow-wrap: anywhere; background: none; border: 0; }
+.rfc a { color: inherit; text-underline-offset: 4px; }
+.chunk { scroll-margin-top: 72px; }
+.rfc-text--prose .prose-p { max-width: var(--measure); margin: 0 0 var(--space-3); font-family: var(--font-read); }
+.rfc-text--prose .rfc { margin-bottom: var(--space-3); }
+
+.foot { border-top: var(--rule); color: var(--muted); font-size: var(--text-secondary); }
+.foot p { max-width: var(--measure); margin: 0 0 var(--space-2); }
+.toast-wrap { position: fixed; z-index: 20; left: 0; right: 0; bottom: calc(var(--space-5) + env(safe-area-inset-bottom)); display: flex; justify-content: center; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
