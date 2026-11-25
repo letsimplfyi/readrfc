@@ -7,7 +7,7 @@ const html = htm.bind(h);
 // One topic or person, closed until someone opens it: only then is Wikipedia asked, once. topic: { q, label, wiki, cat }.
 // `more` is the link to the graph of everything related: { href, label }.
 export class About extends Component {
-  state = { status: 'idle', summary: null };
+  state = { status: 'idle', summary: null, imageFailed: false };
   abort = null;
   componentWillUnmount() { this.abort?.abort(); }
   onToggle = event => {
@@ -24,15 +24,15 @@ export class About extends Component {
       if (!ac.signal.aborted) this.setState({ status: summary ? 'ready' : 'none', summary });
     } catch { if (!ac.signal.aborted) this.setState({ status: 'error' }); }
   }
-  render({ topic, more }, { status, summary }) {
-    return html`<details class="about" onToggle=${this.onToggle}><summary>${topic.label}</summary>
+  render({ topic, more }, { status, summary, imageFailed }) {
+    return html`<details class="about" onToggle=${this.onToggle}><summary><span class="ls-tag ls-tag--info about-tag"><${Icon} name="info" small /><span class="about-label">${topic.label}</span><span class="about-mark" aria-hidden="true"></span></span></summary>
       <div class="about-body">
         ${status === 'loading' && html`<p class="status" role="status">Loading</p>`}
         ${status === 'error' && html`<p class="status" role="alert">Could not load. <button class="quiet" type="button" onClick=${() => this.load()}><${Icon} name="retry" small /> Retry</button></p>`}
-        ${status === 'ready' && html`${summary.image && html`<img class="about-img" src=${summary.image} alt="" width=${summary.width || undefined} height=${summary.height || undefined} loading="lazy" referrerpolicy="no-referrer" />`}
+        ${status === 'ready' && html`${summary.image && !imageFailed && html`<img class="about-img" src=${summary.image} alt=${topic.label} width=${summary.width || undefined} height=${summary.height || undefined} decoding="async" referrerpolicy="no-referrer" onError=${() => this.setState({ imageFailed: true })} />`}
           ${summary.description && html`<p class="about-desc">${summary.description}</p>`}
           <p class="about-text">${summary.extract.length > 420 ? `${summary.extract.slice(0, 420).replace(/\s+\S*$/, '')}…` : summary.extract}</p>
-          <p class="meta">Text from Wikipedia, CC BY-SA 4.0. The picture has its own licence, shown on the Wikipedia page.</p>`}
+          <p class="meta">Text from Wikipedia, CC BY-SA 4.0.${summary.image && !imageFailed ? ' The picture has its own licence, shown on the Wikipedia page.' : ''}</p>`}
         <div class="actions">
           ${topic.wiki && html`<a class="ls-out" href=${pageUrl(topic.wiki)} target="_blank" rel="noopener noreferrer">Wikipedia</a>`}
           ${topic.cat && html`<a class="ls-out" href=${commonerUrl(topic.cat)} target="_blank" rel="noopener noreferrer">Photos on Commoner</a>`}

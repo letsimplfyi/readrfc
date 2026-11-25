@@ -186,9 +186,6 @@ export class App extends Component {
         ${r?.area && html`<dt>Area</dt><dd><a href=${tagHref('area', r.area)}>${r.area}</a></dd>`}
         ${r?.pages > 0 && html`<dt>Pages</dt><dd>${r.pages}</dd>`}
         ${r?.keywords.length > 0 && html`<dt>Tags</dt><dd>${r.keywords.map((k, i) => html`${i ? ', ' : ''}<a href=${tagHref('kw', k)}>${k}</a>`)}</dd>`}
-        ${(r?.people.length > 0 || r?.topics.length > 0) && html`<dt>About</dt><dd class="abouts">
-          ${r.people.map(p => html`<${About} key=${`${p.q}-${p.name}`} topic=${p} more=${{ href: tagHref('author', p.name), label: 'Their RFCs' }} />`)}
-          ${r.topics.map(t => html`<${About} key=${t.q} topic=${t} more=${{ href: tagHref('topic', t.q), label: 'Same topic' }} />`)}</dd>`}
         <${Relations} data=${data} label="Obsoletes" list=${data.obsoletes.get(doc.n)} />
         <${Relations} data=${data} label="Obsoleted by" list=${data.obsoletedBy.get(doc.n)} />
         <${Relations} data=${data} label="Updates" list=${data.updates.get(doc.n)} />
@@ -234,6 +231,9 @@ export class App extends Component {
         <a class="ls-out" href=${officialUrl(doc.n)} target="_blank" rel="noopener noreferrer">RFC Editor</a>
       </div>
       ${newer?.length > 0 && html`<${Notice}>Obsoleted by ${newer.map((n, i) => html`${i ? ', ' : ''}<a href=${rfcHref(n)}>RFC ${n}</a>`)}.<//>`}
+      ${(r?.people.length > 0 || r?.topics.length > 0) && html`<div class="abouts" role="group" aria-label="About">
+        ${r.people.map(p => html`<${About} key=${`${p.q}-${p.name}`} topic=${p} more=${{ href: tagHref('author', p.name), label: 'Their RFCs' }} />`)}
+        ${r.topics.map(t => html`<${About} key=${t.q} topic=${t} more=${{ href: tagHref('topic', t.q), label: 'Same topic' }} />`)}</div>`}
       ${this.renderDetails(doc)}
       ${toc.length > 0 && doc.status === 'ready' && html`<details class="details-fold" open=${contentsOpen} onToggle=${e => this.setState({ contentsOpen: e.target.open })}><summary>${LABELS.contents}</summary>
         <ul class="toc">${toc.map(c => html`<li class=${`toc-${Math.min(c.level, 3)}`}><a href=${rfcHref(doc.n, c.id)}>${c.title}</a></li>`)}</ul></details>`}
