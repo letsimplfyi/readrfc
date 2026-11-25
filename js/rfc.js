@@ -32,7 +32,9 @@ export async function fetchMeta(n, signal) {
 }
 
 // ---- cleaning ---------------------------------------------------------------------------------
+const MONTH = '(?:January|February|March|April|May|June|July|August|September|October|November|December)';
 const HEADER = /^RFC \d+ {2,}(?:.* {2,})?[A-Z][a-z]+ \d{4}\s*$/;
+const DATE_ONLY = new RegExp(`^${MONTH} \\d{4}$`); // old running header: the date alone, then an indented title
 const FOOTER = /\[Page \d+\]\s*$/;
 const SENTENCE_END = /[.:?!)"'\]]\s*$/;
 
@@ -40,7 +42,7 @@ const SENTENCE_END = /[.:?!)"'\]]\s*$/;
 // never changed. A blank line is kept between pages only where the text before it ends a sentence; otherwise the
 // paragraph simply continues on the next page.
 export function cleanText(raw) {
-  const text = String(raw || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const text = String(raw || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').replace(/[ \t]+$/gm, '');
   const pages = text.split('\f').map((page, i) => {
     let lines = page.split('\n');
     while (lines.length && !lines.at(-1).trim()) lines.pop();
@@ -49,6 +51,7 @@ export function cleanText(raw) {
       let k = 0;
       while (k < lines.length && !lines[k].trim()) k++;
       if (k < lines.length && HEADER.test(lines[k])) k++;
+      else if (k < lines.length && DATE_ONLY.test(lines[k].trim())) { k++; if (k < lines.length && lines[k].trim() && /^ {15,}\S/.test(lines[k]) && lines[k].trim().length < 60) k++; }
       while (k < lines.length && !lines[k].trim()) k++;
       lines = lines.slice(k);
     }
@@ -64,6 +67,18 @@ export function cleanText(raw) {
     out.push(...lines);
   });
   return out.join('\n').replace(/\n{4,}/g, '\n\n\n').replace(/^\n+/, '') + '\n';
+}
+
+// The title block of an RFC is laid out for 72 columns: centred titles, two columns, runs of blank lines. For a narrow screen it
+// is rewritten as plain short lines. Only whitespace changes; every word stays.
+export function tidyFront(text) {
+  const out = [];
+  for (const line of String(text).replace(/\n$/, '').split('\n')) {
+    if (!line.trim()) { if (out.length && out.at(-1) !== '') out.push(''); continue; }
+    for (const part of line.trim().split(/ {3,}/)) out.push(part);
+  }
+  while (out.length && out.at(-1) === '') out.pop();
+  return out.join('\n') + '\n';
 }
 
 // ---- headings -----------------------------------------------------------------------------------
@@ -119,13 +134,34 @@ export function linkify(text, exists) {
 }
 
 // ---- reflow (optional prose mode) ---------------------------------------------------------------
-// Paragraphs of ordinary prose are joined into flowing text; anything that looks like a figure, table, code or a list
-// stays exactly as published. Returns [{ pre: boolean, text }].
+// Ordinary prose is joined into flowing text. Lists become items. Figures, tables, code and anything that is not clearly prose stay
+// exactly as published (shown in a block that scrolls sideways, not wrapped). Returns [{ kind: 'p' | 'list' | 'pre', text, items? }].
+const MARKER = /^(\s*)(\[[^\]\s]{1,30}\]|[-*+o•]|\(?\d{1,3}[.)]|\(?[a-zA-Z][.)])\s{1,4}(?=\S)/;
+const CODEISH = /[{};]\s*$|::=|^\s*(\/\/|\/\*|#|<)|\s=\/\s|\.{4,}/;
+
+function listItems(lines) {
+  const items = [];
+  for (const line of lines) {
+    const m = line.match(MARKER);
+    if (m && (!items.length || m[1].length <= items[0].indent)) items.push({ indent: m[1].length, marker: m[2], parts: [line.slice(m[0].length).trim()] });
+    else if (items.length) items.at(-1).parts.push(line.trim());
+    else return null;
+  }
+  return items.map(({ marker, parts }) => ({ marker, text: parts.join(' ').replace(/\s+/g, ' ') }));
+}
+
 export function paragraphs(text) {
-  return text.replace(/\n$/, '').split(/\n{2,}/).filter(p => p.trim()).map(p => {
+  return text.replace(/^(?:[ \t]*\n)+/, '').replace(/\s+$/, '').split(/\n(?:[ \t]*\n)+/).filter(p => p.trim()).map(p => {
     const lines = p.split('\n');
+    if (lines.some(l => CODEISH.test(l)) || lines.some(l => /\S {2,}\S/.test(l.trim()) && !/[.?!:)"'\]] {2,}\S/.test(l.trim()) ) && !MARKER.test(lines[0])) return { kind: 'pre', pre: true, text: p };
+    if (MARKER.test(lines[0])) {
+      const items = listItems(lines);
+      if (items && items.length && items.every(i => i.text)) return { kind: 'list', pre: false, text: p, items };
+    }
     const indents = lines.map(l => l.match(/^ */)[0].length);
-    const flowing = lines.every(l => !/[^.?!:)"'\]] {2,}\S/.test(l.trim()) && !/^\s*[-*o+]\s|^\s*\d+[.)]\s|^\s*\[\d+\]/.test(l)) && Math.max(...indents) - Math.min(...indents) <= 0 && Math.min(...indents) <= 3;
-    return flowing && lines.length > 0 ? { pre: false, text: lines.map(l => l.trim()).join(' ') } : { pre: true, text: p };
+    const body = lines.slice(0, -1).map(l => l.trim().length);
+    const filled = lines.length === 1 ? lines[0].trim().length >= 20 || /[.:]$/.test(lines[0].trim()) : Math.min(...body) >= 40;
+    const flowing = filled && Math.max(...indents) - Math.min(...indents) <= 0 && Math.min(...indents) <= 3;
+    return flowing ? { kind: 'p', pre: false, text: lines.map(l => l.trim()).join(' ') } : { kind: 'pre', pre: true, text: p };
   });
 }

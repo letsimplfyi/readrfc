@@ -10,6 +10,7 @@
     "test:all": "npm test && npm run test:e2e",
     "brand": "node tools/sync-brand.mjs",
     "brand:check": "node tools/sync-brand.mjs --check",
-    "index": "node tools/build-index.mjs"
+    "index": "node tools/build-index.mjs",
+    "topics": "node tools/build-topics.mjs"
   }
 }

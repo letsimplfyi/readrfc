@@ -2,12 +2,12 @@
 // CACHE and APP_VERSION (js/config.js) carry the same version; the deploy workflow stamps both on every
 // release, so each deploy has its own cache and cached files can never be mixed across versions.
 // Install is atomic: one missing file fails the whole install rather than half-caching a release.
-// The index (data/*.json) is part of the release. RFC texts from www.rfc-editor.org are cross-origin and never intercepted.
+// The index (data/*.json) is part of the release. RFC texts and Wikipedia summaries are cross-origin and never intercepted.
 const CACHE = 'readrfc-shell-dev';
 const SHELL = [
   './', './styles.css', './manifest.json',
-  './js/config.js', './js/route.js', './js/rfc.js', './js/index.js', './js/graph.js', './js/graphview.js', './js/store.js', './js/icons.js', './js/ui.js', './js/main.js', './js/theme.js', './js/update.js',
-  './data/index.json', './data/graph.json',
+  './js/config.js', './js/route.js', './js/rfc.js', './js/index.js', './js/graph.js', './js/graphview.js', './js/about.js', './js/wiki.js', './js/store.js', './js/icons.js', './js/ui.js', './js/main.js', './js/theme.js', './js/update.js',
+  './data/index.json', './data/graph.json', './data/topics.json',
   './brand/tokens/tokens.css', './brand/css/base.css', './brand/css/components.css',
   './brand/fonts/atkinson-hyperlegible-mono-latin.woff2', './brand/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2',
   './brand/fonts/courier-prime-400-latin.woff2', './brand/fonts/courier-prime-700-latin.woff2', './brand/fonts/noto-serif-malayalam.woff2',

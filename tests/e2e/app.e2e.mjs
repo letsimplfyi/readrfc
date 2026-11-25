@@ -30,7 +30,7 @@ async function open(hash = '#/', { viewport = { width: 390, height: 780 }, stora
   const context = await browser.newContext({ viewport, serviceWorkers: 'block' });
   await context.addInitScript(entries => { if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1'); for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v); }, storage);
   const page = await context.newPage();
-  const outside = [], violations = [], seen = [];
+  const outside = [], violations = [], seen = [], wiki = [], images = [];
   page.on('console', m => { if (/Content Security Policy/i.test(m.text())) violations.push(m.text()); });
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
@@ -44,10 +44,16 @@ async function open(hash = '#/', { viewport = { width: 390, height: 780 }, stora
       if (ext === 'txt') return RFC_TEXT[n] ? route.fulfill({ contentType: 'text/plain', body: RFC_TEXT[n] }) : route.fulfill({ status: 404, body: '' });
       return META[n] ? route.fulfill({ json: META[n] }) : route.fulfill({ status: 404, body: '' });
     }
+    if (url.origin === 'https://en.wikipedia.org') {
+      wiki.push(url.pathname);
+      if (url.pathname === '/api/rest_v1/page/summary/HTTP') return route.fulfill({ json: { type: 'standard', title: 'HTTP', description: 'Application layer protocol', extract: 'HTTP is an application layer protocol in the Internet protocol suite.', thumbnail: { source: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/HTTP_logo.svg/330px-HTTP_logo.svg.png', width: 330, height: 177 } } });
+      return route.fulfill({ status: 404, body: '' });
+    }
+    if (url.origin === 'https://upload.wikimedia.org' || url.origin === 'https://thumb.wikimedia.org') { images.push(url.href); return route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="330" height="177"/>' }); }
     outside.push(url.href); return route.abort();
   });
   await page.goto(base + '/' + hash);
-  return { page, context, outside, violations, seen };
+  return { page, context, outside, violations, seen, wiki, images };
 }
 
 test('home: search, AND words, a number jumps to the RFC, no CSP violations and nothing leaves the machine', async () => {
@@ -237,4 +243,35 @@ test('graph on a phone: one vertical timeline in the page (no inner scroller), t
   await wide.page.locator('a.node').first().waitFor();
   assert.equal(await wide.page.locator('.graph-scroll').count(), 1);
   await wide.context.close();
+});
+
+test('About: nothing is asked of Wikipedia until it is opened; then one request, a summary, a picture and honest links', async () => {
+  const { page, context, outside, violations, wiki, images } = await open('#/rfc/9110');
+  await page.locator('.rfc').first().waitFor();
+  await page.getByText('Details').click();
+  const about = page.locator('details.about', { hasText: 'Hypertext Transfer Protocol' });
+  await about.waitFor();
+  assert.deepEqual(wiki, [], 'no request on load');
+  await about.locator('summary').click();
+  await about.getByText('HTTP is an application layer protocol').waitFor();
+  assert.deepEqual(wiki, ['/api/rest_v1/page/summary/HTTP']);
+  await about.locator('img.about-img').waitFor();
+  assert.equal(await about.getByRole('link', { name: 'Wikipedia' }).getAttribute('href'), 'https://en.wikipedia.org/wiki/HTTP');
+  assert.equal(await about.getByRole('link', { name: 'Photos on Commoner' }).getAttribute('href'), 'https://commoner.letsimpl.fyi/?c=Hypertext%20Transfer%20Protocol');
+  assert.match(await about.innerText(), /CC BY-SA 4\.0/);
+  await about.locator('summary').click(); await about.locator('summary').click();
+  assert.equal(wiki.length, 1, 'opened again: no second request');
+  await about.getByRole('link', { name: 'Same topic' }).click();
+  await page.waitForURL(/graph\/tag\/topic%3AQ\d+/);
+  await page.locator('a.node').first().waitFor();
+  assert.match(await page.locator('h1').innerText(), /Topic Hypertext Transfer Protocol/);
+  assert.deepEqual(outside, []); assert.deepEqual(violations, []);
+  await context.close();
+});
+
+test('About: opening a topic graph asks Wikipedia nothing', async () => {
+  const { page, context, wiki } = await open('#/graph/tag/topic:Q8777');
+  await page.locator('a.node').first().waitFor();
+  assert.deepEqual(wiki, []);
+  await context.close();
 });

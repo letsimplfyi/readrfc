@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseNumber, cleanText, chunks, headingOf, linkify, paragraphs, textUrl, metaUrl, officialUrl } from '../js/rfc.js';
+import { parseNumber, cleanText, chunks, headingOf, linkify, paragraphs, tidyFront, textUrl, metaUrl, officialUrl } from '../js/rfc.js';
 import { PAGE_TEXT } from './fixtures.js';
 
 test('numbers: 9110, rfc 9110, RFC9110 and rfc-9110 all mean the same RFC; nothing else does', () => {
@@ -61,10 +61,53 @@ test('linkify: only RFCs that exist become links, the words are unchanged', () =
   assert.deepEqual(linkify('nothing here', exists), ['nothing here']);
 });
 
-test('paragraphs: prose is joined, tables, lists and figures stay as published', () => {
-  const text = '   First line of a paragraph\n   and its second line.\n\n   Name      Value\n   a         1\n\n   o  one\n   o  two\n\n      indented code\n';
-  const out = paragraphs(text);
-  assert.deepEqual(out[0], { pre: false, text: 'First line of a paragraph and its second line.' });
-  assert.ok(out.slice(1).every(p => p.pre));
-  assert.deepEqual(paragraphs('   Two sentences.  Joined here,\n   across lines.\n')[0], { pre: false, text: 'Two sentences.  Joined here, across lines.' });
+test('paragraphs: prose is joined into one paragraph, the double space after a full stop is kept as text', () => {
+  const out = paragraphs('   Two sentences.  Joined here, across a long line of words that is\n   filled out to the usual width, and then it ends.\n');
+  assert.equal(out.length, 1);
+  assert.deepEqual([out[0].kind, out[0].pre], ['p', false]);
+  assert.match(out[0].text, /^Two sentences\.  Joined here, across a long line of words that is filled out/);
+});
+
+test('paragraphs: lists become items with their markers, continuation lines join their item', () => {
+  const [list] = paragraphs('   o  First item that continues\n      onto a second line.\n   o  Second item.\n');
+  assert.equal(list.kind, 'list');
+  assert.deepEqual(list.items, [{ marker: 'o', text: 'First item that continues onto a second line.' }, { marker: 'o', text: 'Second item.' }]);
+  assert.deepEqual(paragraphs('   1.  One\n   2.  Two\n')[0].items.map(i => i.marker), ['1.', '2.']);
+  assert.deepEqual(paragraphs('   [RFC2119]  Bradner, S., "Key words for use in RFCs".\n')[0].items.map(i => i.marker), ['[RFC2119]']);
+});
+
+test('paragraphs: tables, ABNF, code, figures and dotted leaders stay as published, never joined', () => {
+  for (const block of ['   Name      Value\n   a         1', '   field-name     = token\n   field-value    = *( field-content )', '   rule = a / b ;\n   other = c', '   +-------+-------+\n   | one   | two   |\n   +-------+-------+', '   1.  Introduction ............ 4', '   int main() {\n      return 0;\n   }', '   short\n   lines\n   only']) {
+    const out = paragraphs(block + '\n');
+    assert.equal(out.length, 1); assert.equal(out[0].kind, 'pre', block); assert.equal(out[0].text, block);
+  }
+});
+
+test('tidyFront: no padding blank lines, no fake centring, two-column header lines split, every word kept', () => {
+  const raw = '\n\nRFC: 793\n                                    \n                                    \n                     TRANSMISSION CONTROL PROTOCOL\n\n\n                         DARPA INTERNET PROGRAM\n\n\n\n                             September 1981\n';
+  assert.equal(tidyFront(raw), 'RFC: 793\n\nTRANSMISSION CONTROL PROTOCOL\n\nDARPA INTERNET PROGRAM\n\nSeptember 1981\n');
+  assert.equal(tidyFront('Network Working Group                                   Steve Crocker\nRequest for Comments: 1                                          UCLA\n'), 'Network Working Group\nSteve Crocker\nRequest for Comments: 1\nUCLA\n');
+  assert.equal(tidyFront('Internet Engineering Task Force (IETF)                  R. Fielding, Ed.\n').split('\n').length, 3);
+});
+
+test('cleanText: whitespace-only lines become empty, and the old two-line page header goes with its page footer', () => {
+  const old = 'RFC: 793\n      \n      \n   Last line of page one.\n\nPostel                                              [Page 3]\n\f\n\fSeptember 1981   \n                                           Transmission Control Protocol\n\n\n\n   Page two starts here.\n';
+  const out = cleanText(old);
+  assert.ok(!/ +\n/.test(out), 'no trailing spaces');
+  assert.ok(!out.includes('[Page 3]') && !out.includes('September 1981') && !out.includes('Transmission Control Protocol'));
+  assert.match(out, /Last line of page one\.\n\n   Page two starts here\./);
+  assert.equal(paragraphs('   One paragraph that has a long first line of prose, filled out\n   and another.\n      \n   Second paragraph here, which is long enough to count.\n').length, 2);
+});
+
+test('paragraphs: the text after a heading starts with a blank line, and its first paragraph is still prose', () => {
+  const rest = '\n   Tokens are short textual identifiers that do not include whitespace\n   or delimiters.\n\n   token          = 1*tchar\n\n   Many HTTP field values are defined using common syntax components,\n   separated by whitespace or specific delimiting characters.\n';
+  const out = paragraphs(rest);
+  assert.deepEqual(out.map(p => p.kind), ['p', 'pre', 'p']);
+  assert.equal(out[0].text, 'Tokens are short textual identifiers that do not include whitespace or delimiters.');
+});
+
+test('chunks and paragraphs together: a real section body flows', () => {
+  const body = chunks(cleanText('5.6.2.  Tokens\n\n   Tokens are short textual identifiers that do not include whitespace\n   or delimiters.\n\n   token = 1*tchar\n')).find(c => c.id === 'section-5.6.2').text;
+  const rest = body.split('\n').slice(1).join('\n');
+  assert.deepEqual(paragraphs(rest).map(p => p.kind), ['p', 'pre']);
 });

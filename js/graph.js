@@ -50,11 +50,11 @@ export function neighbourhood(data, n, hops = 1, max = GRAPH_MAX_NODES) {
   return finish(data, cap(data, [...seen], max, n), { focus: n });
 }
 
-// Tags: area, wg (working group), stream, kw (keyword).
+// Tags: area, wg (working group), stream, kw (keyword), topic (a Wikidata subject such as a protocol).
 export function withTag(data, tag, value) {
   const out = [];
   for (const r of data.byNumber.values()) {
-    if (tag === 'area' ? r.area === value : tag === 'wg' ? r.group === value : tag === 'stream' ? r.stream === value : r.keywords.includes(value)) out.push(r.n);
+    if (tag === 'area' ? r.area === value : tag === 'wg' ? r.group === value : tag === 'stream' ? r.stream === value : tag === 'topic' ? r.topics.some(t => t.q === value) : r.keywords.includes(value)) out.push(r.n);
   }
   return out;
 }
@@ -75,13 +75,13 @@ export function newestInChain(data, records) {
 // What to offer on the "pick a way in" screen: tag counts, most frequent first, and the decades with RFCs.
 export function chooser(data) {
   const count = map => [...map].map(([value, n]) => ({ value, n })).sort((a, b) => b.n - a.n || (a.value < b.value ? -1 : 1));
-  const areas = new Map(), streams = new Map(), groups = new Map(), keywords = new Map(), decades = new Map();
+  const areas = new Map(), streams = new Map(), groups = new Map(), keywords = new Map(), decades = new Map(), topics = new Map();
   const bump = (m, k) => { if (k) m.set(k, (m.get(k) || 0) + 1); };
   for (const r of data.byNumber.values()) {
-    bump(areas, r.area); bump(streams, r.stream); bump(groups, r.group); r.keywords.forEach(k => bump(keywords, k));
+    bump(areas, r.area); bump(streams, r.stream); bump(groups, r.group); r.keywords.forEach(k => bump(keywords, k)); r.topics.forEach(t => bump(topics, t.q));
     if (r.year) bump(decades, Math.floor(r.year / 10) * 10);
   }
-  return { areas: count(areas), streams: count(streams), groups: count(groups), keywords: count(keywords), decades: [...decades.keys()].sort((a, b) => a - b) };
+  return { areas: count(areas), streams: count(streams), groups: count(groups), keywords: count(keywords), topics: count(topics).map(({ value, n }) => ({ value, n, label: data.topicByQ.get(value)?.label || value })), decades: [...decades.keys()].sort((a, b) => a - b) };
 }
 
 // ---- layout ---------------------------------------------------------------------------------------

@@ -3,4 +3,4 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; manifest-src 'self'; img-src 'self' data:; connect-src 'self' https://www.rfc-editor.org; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; manifest-src 'self'; img-src 'self' data: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://www.rfc-editor.org https://en.wikipedia.org; base-uri 'none'; form-action 'self'; frame-ancestors 'none'

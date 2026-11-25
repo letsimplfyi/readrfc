@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const ALLOWED_HOSTS = new Set(['www.rfc-editor.org', 'readrfc.letsimpl.fyi', 'letsimpl.fyi', 'github.com', 'brand.letsimpl.fyi', 'www.w3.org', 'example.org']);
+const ALLOWED_HOSTS = new Set(['www.rfc-editor.org', 'en.wikipedia.org', 'upload.wikimedia.org', 'thumb.wikimedia.org', 'commoner.letsimpl.fyi', 'readrfc.letsimpl.fyi', 'letsimpl.fyi', 'github.com', 'brand.letsimpl.fyi', 'www.w3.org', 'example.org']);
 const jsFiles = readdirSync(new URL('../js/', import.meta.url)).map(f => `js/${f}`);
 
 test('branding is the vendored letsimpl.fyi brand, loaded before the app styles', () => {
@@ -32,7 +32,7 @@ test('no inline scripts, styles or event handlers; the CSP allows only the RFC E
   assert.ok(!/<style[\s>]/.test(html) && !/\sstyle="/.test(html) && !/\son[a-z]+="/.test(html));
   const csp = read('_headers').match(/Content-Security-Policy: (.*)/)[1];
   assert.match(csp, /default-src 'self'/); assert.match(csp, /script-src 'self'(;|$)/); assert.match(csp, /style-src 'self'(;|$)/);
-  assert.match(csp, /connect-src 'self' https:\/\/www\.rfc-editor\.org(;|$)/); assert.match(csp, /img-src 'self' data:(;|$)/);
+  assert.match(csp, /connect-src 'self' https:\/\/www\.rfc-editor\.org https:\/\/en\.wikipedia\.org(;|$)/); assert.match(csp, /img-src 'self' data: https:\/\/upload\.wikimedia\.org https:\/\/thumb\.wikimedia\.org(;|$)/);
   assert.ok(!/unsafe-/.test(csp));
   for (const file of jsFiles) assert.ok(!/\.style\.|innerHTML|insertAdjacentHTML|\bstyle:/.test(read(file)), `${file} sets styles or HTML directly`);
 });
@@ -42,8 +42,12 @@ test('the page ships an empty app root that main.js clears first', () => {
   assert.match(read('js/main.js'), /replaceChildren\(\)/);
 });
 
-test('the only hosts the app talks to are the RFC Editor and its own links', () => {
+test('the only hosts the app talks to are the RFC Editor, Wikipedia and its own links', () => {
   for (const file of ['index.html', 'styles.css', 'manifest.json', ...jsFiles]) for (const [, host] of read(file).matchAll(/https?:\/\/([a-z0-9.-]+)/gi)) assert.ok(ALLOWED_HOSTS.has(host), `${file} mentions ${host}`);
 });
 
-test('RFC requests are anonymous', () => assert.match(read('js/rfc.js'), /credentials: 'omit', referrerPolicy: 'no-referrer'/));
+test('requests are anonymous', () => { for (const f of ['js/rfc.js', 'js/wiki.js']) assert.match(read(f), /credentials: 'omit', referrerPolicy: 'no-referrer'/, f); });
+
+test('Wikipedia is asked only when someone opens About, never on load', () => {
+  assert.match(read('js/about.js'), /onToggle/); assert.ok(!/fetchSummary/.test(read('js/ui.js')) && !/fetchSummary/.test(read('js/graphview.js')));
+});

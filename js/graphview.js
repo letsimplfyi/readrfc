@@ -6,13 +6,14 @@ import { neighbourhood, tagSet, yearSet, newestInChain, chooser, layout, layoutV
 import { statusName, streamName } from './index.js';
 import { fetchMeta } from './rfc.js';
 import { Icon } from './icons.js';
+import { About } from './about.js';
 const html = htm.bind(h);
 
-const TAG_LABEL = { area: 'Area', wg: 'Group', stream: 'Stream', kw: 'Tag' };
+const TAG_LABEL = { area: 'Area', wg: 'Group', stream: 'Stream', kw: 'Tag', topic: 'Topic' };
 const KEY_STATUSES = ['IS', 'PS', 'BCP', 'INF', 'HIS'];
 const STAR = 'M0 -5L1.5 -1.5L5 -1.5L2.2 .8L3.2 4.5L0 2.4L-3.2 4.5L-2.2 .8L-5 -1.5L-1.5 -1.5Z';
 
-export const graphTitle = r => (r.kind === 'rfc' ? `RFC ${r.n}` : r.kind === 'tag' ? `${TAG_LABEL[r.tag]} ${r.tag === 'stream' ? streamName(r.value) : r.value}` : r.kind === 'year' ? `${r.from}–${r.to}` : 'Graph');
+export const graphTitle = (r, data) => (r.kind === 'rfc' ? `RFC ${r.n}` : r.kind === 'tag' ? `${TAG_LABEL[r.tag]} ${r.tag === 'stream' ? streamName(r.value) : r.tag === 'topic' ? data?.topicByQ.get(r.value)?.label || r.value : r.value}` : r.kind === 'year' ? `${r.from}–${r.to}` : 'Graph');
 
 function buildGraph(data, route, limit) {
   if (route.kind === 'rfc') return neighbourhood(data, route.n, route.hops, limit);
@@ -88,6 +89,8 @@ export class GraphView extends Component {
       <h2>Areas</h2><ul class="ls-tags">${c.areas.map(a => chip('area', a))}</ul>
       <h2>Streams</h2><ul class="ls-tags">${c.streams.map(a => chip('stream', a))}</ul>
       <h2>Years</h2><ul class="ls-tags">${c.decades.map(d => html`<li><a class="ls-tag" href=${graphHref({ kind: 'year', from: d, to: d + 9 })}>${d}s</a></li>`)}</ul>
+      ${c.topics.length > 0 && html`<h2>Topics</h2><ul class="ls-tags">${c.topics.slice(0, 40).map(t => html`<li><a class="ls-tag" href=${tagHref('topic', t.value)}>${t.label} <span class="count">${t.n}</span></a></li>`)}</ul>
+      <details class="details-fold"><summary>More topics</summary><ul class="ls-tags">${c.topics.slice(40).map(t => html`<li><a class="ls-tag" href=${tagHref('topic', t.value)}>${t.label} <span class="count">${t.n}</span></a></li>`)}</ul></details>`}
       <h2>Tags</h2><ul class="ls-tags">${c.keywords.map(a => chip('kw', a))}</ul>
       <details class="details-fold"><summary>Groups</summary><ul class="ls-tags">${c.groups.slice(0, 60).map(a => chip('wg', a))}</ul></details>
     </section>`;
@@ -130,7 +133,7 @@ export class GraphView extends Component {
     const description = `${graph.records.length} RFCs, time runs ${this.state.narrow ? 'top to bottom' : 'left to right'}, each RFC is a link.`;
     return html`<div class=${vertical ? 'graph-flow' : 'graph-scroll'} ref=${this.setScroller} tabindex=${vertical ? undefined : '0'} role=${vertical ? undefined : 'region'} aria-label=${vertical ? undefined : 'Graph, scrolls sideways'}>
       <svg class=${vertical ? 'graph graph--v' : 'graph'} width=${vertical ? undefined : view.width} height=${vertical ? undefined : view.height} viewBox=${`0 0 ${view.width} ${view.height}`} role="group" aria-labelledby="graph-title graph-desc">
-        <title id="graph-title">${graphTitle(this.props.route)}</title><desc id="graph-desc">${description}</desc>
+        <title id="graph-title">${graphTitle(this.props.route, this.props.data)}</title><desc id="graph-desc">${description}</desc>
         <defs>
           <marker id="arrow-o" class="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="arrow-solid" /></marker>
           <marker id="arrow-u" class="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10" class="arrow-open" /></marker>
@@ -167,6 +170,7 @@ export class GraphView extends Component {
         ${newest && html`<a class="ls-btn" href=${rfcHref(newest.n)}>Newest: RFC ${newest.n}</a>`}
       </div>
       ${abstract === null ? html`<p class="status" role="status">Loading</p>` : abstract ? html`<p class="abstract">${abstract.length > 360 ? `${abstract.slice(0, 360).replace(/\s+\S*$/, '')}…` : abstract}</p>` : null}
+      ${r.topics.map(t => html`<${About} key=${t.q} topic=${t} />`)}
       ${chips.length > 0 && html`<ul class="ls-tags">${chips.map(([tag, value]) => html`<li><a class="ls-tag" href=${tagHref(tag, value)}>${tag === 'stream' ? streamName(value) : value}</a></li>`)}</ul>`}
     </aside>`;
   }
@@ -191,7 +195,7 @@ export class GraphView extends Component {
     const unread = graph.records.some(r => !read.includes(r.n));
     return html`<section>
       <div class="titlebar"><a class="back" href=${back} aria-label="Back"><${Icon} name="back" /></a>
-        <h1>${graphTitle(route)}${route.kind === 'rfc' && data.byNumber.get(route.n) ? html`<span class="subtitle">${data.byNumber.get(route.n).title}</span>` : ''}</h1></div>
+        <h1>${graphTitle(route, data)}${route.kind === 'rfc' && data.byNumber.get(route.n) ? html`<span class="subtitle">${data.byNumber.get(route.n).title}</span>` : ''}</h1></div>
       <p class="status" role="status">${graph.records.length} ${graph.records.length === 1 ? 'RFC' : 'RFCs'}${graph.capped ? ` of ${graph.total}` : ''}</p>
       <div class="actions">
         ${route.kind === 'rfc' && html`<div class="segmented" role="group" aria-label="Distance">

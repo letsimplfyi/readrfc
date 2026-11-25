@@ -32,7 +32,7 @@ test('service worker: precaches every runtime file, versions its cache with the 
   for (const file of shell) assert.ok(exists(file), `precached but missing: ${file}`);
   for (const [, file] of read('index.html').matchAll(/(?:href|src)="\.\/([^"]+)"/g)) assert.ok(shell.includes(file), `index.html loads ${file} but sw.js does not precache it`);
   for (const file of readdirSync(new URL('../js/', import.meta.url))) assert.ok(shell.includes(`js/${file}`), `js/${file} is not precached`);
-  for (const file of ['data/index.json', 'data/graph.json']) assert.ok(shell.includes(file), file);
+  for (const file of ['data/index.json', 'data/graph.json', 'data/topics.json']) assert.ok(shell.includes(file), file);
   for (const icon of JSON.parse(read('manifest.json')).icons) assert.ok(shell.includes(icon.src), icon.src);
   assert.equal(sw.match(/const CACHE = 'readrfc-shell-([^']+)'/)[1], read('js/config.js').match(/APP_VERSION = '([^']+)'/)[1], 'CACHE and APP_VERSION must carry the same version');
   assert.match(sw, /cache: 'reload'/); assert.match(sw, /skipWaiting/); assert.match(sw, /SKIP_WAITING/); assert.match(sw, /url\.origin !== self\.location\.origin\) return/);

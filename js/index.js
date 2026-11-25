@@ -2,24 +2,31 @@
 import { STATUS_NAMES, STREAM_NAMES, MONTH_NAMES } from './config.js';
 import { parseNumber } from './rfc.js';
 
-export function hydrate(index, graph) {
+export function hydrate(index, graph, topics = null) {
   const byNumber = new Map();
   for (const [n, t, y, m, s, x, a, w, k, p] of index.rfcs) {
     byNumber.set(n, { n, title: t, year: y, month: m, status: s, stream: x >= 0 ? index.streams[x] : '', area: a >= 0 ? index.areas[a] : '', group: w >= 0 ? index.groups[w] : '',
       keywords: k.map(i => index.keywords[i]), pages: p });
   }
+  const topicByQ = new Map();
+  if (topics) {
+    const list = topics.topics.map(([q, label, wiki, cat]) => ({ q, label, wiki, cat }));
+    list.forEach(t => topicByQ.set(t.q, t));
+    for (const [n, idx] of Object.entries(topics.rfcs)) { const r = byNumber.get(Number(n)); if (r) r.topics = idx.map(k => list[k]).filter(Boolean); }
+  }
+  for (const r of byNumber.values()) r.topics ||= [];
   const obsoletes = new Map(), obsoletedBy = new Map(), updates = new Map(), updatedBy = new Map();
   const add = (map, key, value) => { if (!map.has(key)) map.set(key, []); map.get(key).push(value); };
   for (const [from, to, kind] of graph.edges) {
     if (kind === 'o') { add(obsoletes, from, to); add(obsoletedBy, to, from); } else { add(updates, from, to); add(updatedBy, to, from); }
   }
-  return { byNumber, obsoletes, obsoletedBy, updates, updatedBy, count: byNumber.size };
+  return { byNumber, topicByQ, obsoletes, obsoletedBy, updates, updatedBy, count: byNumber.size };
 }
 
 let loading = null;
 export function loadIndex() {
-  loading ||= Promise.all([fetch('./data/index.json').then(r => r.json()), fetch('./data/graph.json').then(r => r.json())])
-    .then(([i, g]) => hydrate(i, g)).catch(error => { loading = null; throw error; });
+  loading ||= Promise.all([fetch('./data/index.json').then(r => r.json()), fetch('./data/graph.json').then(r => r.json()), fetch('./data/topics.json').then(r => r.json()).catch(() => null)])
+    .then(([i, g, t]) => hydrate(i, g, t)).catch(error => { loading = null; throw error; });
   return loading;
 }
 

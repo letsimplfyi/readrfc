@@ -2,9 +2,9 @@
 //   #/                  home          #/?q=http          search
 //   #/rfc/9110          reader        #/rfc/9110/section-5.1   reader at a heading
 //   #/graph             pick a way in #/graph/rfc/9110?hops=2&sel=2616   around one RFC
-//   #/graph/tag/area:sec  one tag (area, wg, stream, kw)   #/graph/year/1998-2003   a range of years
+//   #/graph/tag/area:sec  one tag (area, wg, stream, kw, topic)   #/graph/year/1998-2003   a range of years
 // Unknown or malformed routes fall back to home, never to an error page.
-export const TAGS = ['area', 'wg', 'stream', 'kw'];
+export const TAGS = ['area', 'wg', 'stream', 'kw', 'topic'];
 const num = s => (/^\d{1,5}$/.test(s) && Number(s) > 0 ? Number(s) : null);
 
 export function parseRoute(hash) {

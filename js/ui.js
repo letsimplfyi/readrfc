@@ -3,8 +3,9 @@ import htm from '../vendor/htm.module.js';
 import { APP_VERSION, REPO_URL, RECENT_KEEP, FAVOURITES_MAX, READ_MAX, RESULTS_PAGE, CHUNK_CHARS, LABELS } from './config.js';
 import { parseRoute, homeHref, rfcHref, graphHref, tagHref } from './route.js';
 import { GraphView, graphTitle } from './graphview.js';
+import { About } from './about.js';
 import { loadIndex, search, statusName, streamName, dateOf } from './index.js';
-import { parseNumber, fetchText, fetchMeta, cleanText, chunks, linkify, paragraphs, officialUrl, errataUrl } from './rfc.js';
+import { parseNumber, fetchText, fetchMeta, cleanText, chunks, linkify, paragraphs, tidyFront, officialUrl, errataUrl } from './rfc.js';
 import { store, pushFront, toggle } from './store.js';
 import { Icon } from './icons.js';
 import { updateState, checkForUpdate, apply, justUpdated } from './update.js';
@@ -57,7 +58,7 @@ export class App extends Component {
 
   enter(route) {
     if (!this.state.data) return;
-    if (route.view !== 'rfc') { this.abort?.abort(); document.title = route.view === 'graph' ? `${graphTitle(route)} · readrfc` : 'readrfc'; this.setState({ doc: null }); return; }
+    if (route.view !== 'rfc') { this.abort?.abort(); document.title = route.view === 'graph' ? `${graphTitle(route, this.state.data)} · readrfc` : 'readrfc'; this.setState({ doc: null }); return; }
     if (this.state.doc?.n === route.n) { this.goToSection(route.section); return; }
     this.openRfc(route);
   }
@@ -185,6 +186,7 @@ export class App extends Component {
         ${r?.area && html`<dt>Area</dt><dd><a href=${tagHref('area', r.area)}>${r.area}</a></dd>`}
         ${r?.pages > 0 && html`<dt>Pages</dt><dd>${r.pages}</dd>`}
         ${r?.keywords.length > 0 && html`<dt>Tags</dt><dd>${r.keywords.map((k, i) => html`${i ? ', ' : ''}<a href=${tagHref('kw', k)}>${k}</a>`)}</dd>`}
+        ${r?.topics.length > 0 && html`<dt>About</dt><dd class="abouts">${r.topics.map(t => html`<${About} key=${t.q} topic=${t} />`)}</dd>`}
         <${Relations} data=${data} label="Obsoletes" list=${data.obsoletes.get(doc.n)} />
         <${Relations} data=${data} label="Obsoleted by" list=${data.obsoletedBy.get(doc.n)} />
         <${Relations} data=${data} label="Updates" list=${data.updates.get(doc.n)} />
@@ -195,12 +197,21 @@ export class App extends Component {
     </details>`;
   }
 
+  // Mono mode shows the text as published. Prose mode (the default on a phone) shows it as readable blocks: headings,
+  // paragraphs, lists, and anything else in a block that scrolls sideways instead of wrapping into a jumble.
   renderChunk(c, exists) {
     const link = part => (typeof part === 'string' ? part : html`<a href=${rfcHref(part.n)}>${part.text}</a>`);
-    const body = this.state.textMode === 'prose' && c.id
-      ? paragraphs(c.text).map(p => (p.pre ? html`<pre class="rfc">${linkify(p.text, exists).map(link)}</pre>` : html`<p class="prose-p">${linkify(p.text, exists).map(link)}</p>`))
-      : html`<pre class="rfc">${c.id ? linkify(c.text, exists).map(link) : c.text}</pre>`;
-    return html`<section id=${c.id || undefined} class="chunk">${body}</section>`;
+    const text = s => linkify(s, exists).map(link);
+    if (this.state.textMode !== 'prose') return html`<section id=${c.id || undefined} class="chunk"><pre class="rfc">${c.id ? text(c.text) : c.text}</pre></section>`;
+    if (!c.id) return html`<section class="chunk"><pre class="rfc rfc-front">${tidyFront(c.text)}</pre></section>`;
+    const lines = c.text.replace(/\n$/, '').split('\n'), heading = lines.shift();
+    const level = Math.min(c.level, 3), Heading = level <= 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
+    const blocks = paragraphs(lines.join('\n')).map(p => (p.kind === 'list'
+      ? html`<ul class="prose-list">${p.items.map(i => html`<li><span class="marker">${i.marker}</span> ${text(i.text)}</li>`)}</ul>`
+      : p.kind === 'p' ? html`<p class="prose-p">${text(p.text)}</p>`
+        : html`<pre class="rfc rfc-block" tabindex="0" aria-label="Preformatted text, scrolls sideways">${text(p.text)}</pre>`));
+    const toc = /^(table-of-contents|contents)$/.test(c.id);
+    return html`<section id=${c.id} class="chunk"><${Heading} class="rfc-h">${c.title}<//>${toc ? html`<details class="details-fold"><summary>${LABELS.contents}</summary>${blocks}</details>` : blocks}</section>`;
   }
 
   renderReader() {

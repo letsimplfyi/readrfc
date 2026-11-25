@@ -32,10 +32,13 @@ Commoner's architecture on purpose, and where this file is silent, Commoner's ru
    UI labels are the neutral nouns in DESIGN.md ("Search", "Read", "Recent", "Graph") and anything else is left empty and
    asked about. Documentation about the code (this file, DESIGN.md, README) is allowed. If unsure, it is copy: ask.
    If the founder wants the donation prompt, it is copied verbatim from Commoner (`../commoner/js/support.js`); it is not in v1.
-4. **No third-party requests beyond the RFC Editor.** The only host the app may contact is `www.rfc-editor.org`
-   (`/rfc/rfcNNNN.txt` and `.json`, open CORS). The CSP in `_headers` allows exactly that, and `tests/design.test.js` fails
-   if any other host appears in the source. No CDNs, remote fonts, trackers, analytics, cookie banners or datatracker calls
-   at runtime. The index build tool may contact `www.rfc-editor.org` in CI only.
+4. **No third-party requests beyond the RFC Editor and Wikimedia, and Wikimedia only on a tap.** The app contacts
+   `www.rfc-editor.org` (`/rfc/rfcNNNN.txt` and `.json`), and, only when someone opens an "About" fold, `en.wikipedia.org`
+   (one anonymous summary request) with its picture from `upload.wikimedia.org` / `thumb.wikimedia.org`. Nothing from Wikimedia
+   loads on page open or in the background. The CSP in `_headers` allows exactly these, and `tests/design.test.js` fails if
+   any other host appears in the source. No CDNs, remote fonts, trackers, analytics, cookie banners or datatracker calls at
+   runtime. Wikidata is contacted by the CI build tool only, never by the app. Photos are not fetched here: the "Photos on
+   Commoner" link opens the sibling app.
 5. **No inline scripts, styles or event-handler attributes** in `index.html` (the CSP forbids them). The pre-paint theme
    script is the separate file `js/theme.js`. In SVG use classes and attributes (`x`, `y`, `d`), not `style=""`.
 6. **Never commit secrets.** The Cloudflare token lives in GitHub repo secrets.
@@ -72,6 +75,7 @@ robots.txt, sitemap.xml
 data/
   index.json         GENERATED search index: one compact record per RFC (see "The index")
   graph.json         GENERATED edges (obsoletes, updates) as number pairs
+  topics.json        GENERATED from Wikidata: each RFC's subject, its Wikipedia article, its Commons category
 js/
   main.js            clears #app, renders <App/>, starts the update machinery
   ui.js              the interface: App, Home, Reader, GraphView, Recent (class components, htm)
@@ -79,6 +83,8 @@ js/
   index.js           loads data/*.json once; search (acronym, AND keywords, case rule); lookups by number
   graph.js           pure graph logic: neighbourhood (hops, cap), tag sets, chains, the deterministic layout
   graphview.js       the graph screens: pick a way in, the SVG picture, the list equivalent, the selected-RFC panel
+  about.js           the "About" fold for a topic: asks Wikipedia only when opened, once
+  wiki.js            pure Wikipedia summary logic: URLs, parsing the answer, the one anonymous request
   route.js           the URL is the state: parse and build routes (pure)
   store.js           localStorage: favourites, recent, read marks, reading position (pure + guarded access)
   update.js          registers the service worker; the safe-restart logic (from Commoner)
@@ -99,6 +105,7 @@ tests/
   e2e/app.e2e.mjs    real Chromium under the production CSP, RFC Editor faked
 tools/
   build-index.mjs    rfc-index.xml -> data/index.json + data/graph.json (CI and `npm run index`)
+  build-topics.mjs   Wikidata -> data/topics.json (CI and `npm run topics`); the only place Wikidata is contacted
   sync-brand.mjs     vendors the brand (npm run brand / brand:check), from Commoner
   serve.py           local static server
 .github/workflows/
